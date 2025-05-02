@@ -1,0 +1,42 @@
+const mainDishes = [
+  {
+    name: "Phở Bò",
+    price: 40000,
+    description:
+      "Phở bò truyền thống Việt Nam với nước dùng ninh từ xương bò trong nhiều giờ, hòa quyện cùng hương thơm của quế, hồi, gừng nướng và hành. Tô phở nóng hổi với những lát thịt bò mềm mại, bánh phở trắng ngần và rau thơm tươi mát tạo nên hương vị đậm đà khó quên.",
+    image:
+      "https://fohlafood.vn/cdn/shop/articles/bi-quyet-nau-phi-bo-ngon-tuyet-dinh.jpg?v=1712213789",
+  },
+  {
+    name: "Bún Chả",
+    price: 35000,
+    description:
+      "Bún chả Hà Nội là sự kết hợp hoàn hảo giữa thịt ba chỉ và chả viên được nướng trên than hoa thơm lừng, ăn kèm với bún tươi, rau sống và nước mắm pha chua ngọt. Món ăn mang đến hương vị đậm đà, hài hòa giữa vị béo của thịt, vị chua cay mặn ngọt của nước chấm và sự thanh mát của rau sống.",
+    image:
+      "https://www.seriouseats.com/thmb/atsVhLwxdCWyX-QDuhOLhR0Kx4s=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/20231204-SEA-VyTran-BunChaHanoi-18-e37d96a89a0f43d097e02311686290f2.jpg",
+  },
+  {
+    name: "Cơm Tấm",
+    price: 30000,
+    description:
+      "Cơm tấm Sài Gòn là món ăn dân dã nhưng rất được ưa chuộng, với hạt cơm tấm vỡ thơm dẻo, ăn kèm sườn nướng thơm phức, bì heo trộn thính và chả trứng hấp béo ngậy. Món ăn thường được phục vụ cùng nước mắm chua ngọt và dưa leo, cà chua, tạo nên sự hòa quyện hương vị đặc sắc.",
+    image:
+      "https://cdn2.fptshop.com.vn/unsafe/Uploads/images/tin-tuc/163056/Originals/com-tam-2.jpg",
+  },
+  {
+    name: "Bún Bò Huế",
+    price: 45000,
+    description:
+      "Bún bò Huế là đặc sản miền Trung với nước dùng đậm vị, cay nồng từ sả, ớt và mắm ruốc. Món ăn gồm sợi bún to, thịt bò mềm, giò heo béo ngậy và chả Huế đặc trưng, ăn kèm rau sống tươi ngon. Đây là lựa chọn tuyệt vời cho những ai yêu thích vị cay đậm và hương thơm đặc trưng.",
+    image:
+      "https://hoasenfoods.vn/wp-content/uploads/2024/01/bun-bo-hue.jpg",
+  },
+  {
+    name: "Mì Quảng",
+    price: 35000,
+    description:
+      "Mì Quảng là món ăn đặc sản của Quảng Nam, nổi bật với sợi mì vàng dai, nước lèo sền sệt thơm ngon từ thịt heo, tôm và đậu phộng rang. Món ăn thường được ăn kèm với bánh tráng nướng, rau sống, chanh và ớt, tạo nên sự kết hợp hài hòa giữa các tầng hương vị đậm đà, giòn rụm và thanh mát.",
+    image:
+      "https://images2.thanhnien.vn/Uploaded/congthang/2023_01_13/mi-quang-anh-dao-ngoc-thach-2557.jpg",
+  },
+];

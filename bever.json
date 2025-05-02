@@ -1,0 +1,42 @@
+const beverages = [
+  {
+    name: "Trà Đào Cam Sả",
+    price: 25000,
+    description:
+      "Trà đào cam sả là sự kết hợp hoàn hảo giữa hương vị ngọt thanh của đào, vị chua nhẹ của cam tươi và mùi thơm dễ chịu từ sả. Thức uống này không chỉ giúp giải nhiệt hiệu quả mà còn mang lại cảm giác thư giãn và tỉnh táo nhờ tinh dầu tự nhiên từ sả và cam. Thích hợp dùng trong những ngày nắng nóng.",
+    image:
+      "https://product.hstatic.net/200000791069/product/lord-50_5221e714bef5444aaab6759e2a219146_1024x1024.jpg",
+  },
+  {
+    name: "Cà Phê Sữa Đá",
+    price: 20000,
+    description:
+      "Cà phê sữa đá là thức uống đặc trưng của Việt Nam với hương vị đậm đà từ cà phê phin truyền thống hòa quyện cùng vị béo ngậy của sữa đặc. Ly cà phê mát lạnh giúp tỉnh táo tinh thần, rất được ưa chuộng vào buổi sáng hoặc giữa giờ làm việc để tăng sự tập trung.",
+    image:
+      "https://product.hstatic.net/1000287491/product/4._ca_phe_sua_da_large.jpg",
+  },
+  {
+    name: "Sinh Tố Bơ",
+    price: 30000,
+    description:
+      "Sinh tố bơ là thức uống bổ dưỡng, sánh mịn với vị béo tự nhiên của quả bơ chín, hòa quyện cùng sữa đặc và đá xay. Không chỉ ngon miệng mà còn giàu vitamin E, chất chống oxy hóa và chất béo lành mạnh tốt cho tim mạch và làn da. Đây là lựa chọn lý tưởng cho những ai yêu thích đồ uống ngọt dịu, thơm mát.",
+    image:
+      "https://cdn2-retail-images.kiotviet.vn/duyquangroup/e423a45a7f8749239bd70f59b0e2e87f.png",
+  },
+  {
+    name: "Nước Chanh Tươi",
+    price: 15000,
+    description:
+      "Nước chanh tươi là thức uống giải khát phổ biến, được pha từ nước cốt chanh tươi nguyên chất, thêm một chút đường và đá lạnh, mang lại vị chua ngọt hài hòa. Đây là lựa chọn tuyệt vời để thanh lọc cơ thể, hỗ trợ tiêu hóa và cung cấp vitamin C giúp tăng cường đề kháng.",
+    image:
+      "https://sohanews.sohacdn.com/160588918557773824/2022/5/13/photo-1-16524074652531849574994.jpg",
+  },
+  {
+    name: "Trà Gừng",
+    price: 20000,
+    description:
+      "Trà gừng ấm nóng được pha từ lát gừng tươi và nước sôi, có thể thêm một chút mật ong hoặc chanh để tăng hương vị. Thức uống này có tác dụng giữ ấm cơ thể, hỗ trợ tiêu hóa, giảm cảm lạnh và giảm căng thẳng. Thích hợp dùng vào buổi sáng sớm hoặc khi trời se lạnh.",
+    image:
+      "https://hinh365.com/wp-content/uploads/2020/06/cung-ngam-nhin-39-463-tam-anh-tuyet-dep-ve-ly-tra-gung-sac-net-tung-chi-tiet-2.jpg",
+  },
+];

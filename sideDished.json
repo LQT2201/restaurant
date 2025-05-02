@@ -1,0 +1,34 @@
+const sideDishes = [
+  {
+    name: "Gỏi Cuốn",
+    price: 20000,
+    description:
+      "Gỏi cuốn là món ăn nhẹ nổi tiếng với lớp bánh tráng mềm cuộn chặt tôm tươi, thịt heo luộc, bún, rau sống và hẹ. Món ăn thanh mát, ít dầu mỡ, thích hợp cho người ăn kiêng và rất được yêu thích vào mùa hè. Thường được ăn kèm với nước chấm tương đậu phộng béo ngậy, tạo nên hương vị hài hòa và hấp dẫn.",
+    image:
+      "https://heyyofoods.com/wp-content/uploads/2024/03/3-4.jpg",
+  },
+  {
+    name: "Chả Giò",
+    price: 25000,
+    description:
+      "Chả giò (nem rán) được làm từ lớp bánh tráng mỏng cuộn nhân thịt heo, miến, mộc nhĩ, cà rốt và các loại gia vị, sau đó chiên vàng giòn. Vỏ ngoài giòn rụm, bên trong mềm và đậm đà, rất thích hợp dùng kèm với nước mắm chua ngọt và rau sống. Đây là món khai vị truyền thống trong các bữa tiệc và dịp lễ.",
+    image:
+      "https://i.ytimg.com/vi/xXhweAEmOFs/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBYKJ65EfLXItpYxWckRqR-EuBtMQ",
+  },
+  {
+    name: "Rau Muống Xào Tỏi",
+    price: 15000,
+    description:
+      "Rau muống xào tỏi là món ăn quen thuộc trong bữa cơm gia đình Việt. Rau được chần sơ, sau đó xào với tỏi băm và một ít dầu ăn để giữ độ giòn và màu xanh đẹp mắt. Hương thơm nồng của tỏi hòa quyện với vị ngọt thanh tự nhiên của rau, tạo nên món ăn đơn giản nhưng hấp dẫn.",
+    image:
+      "https://beptruong.edu.vn/wp-content/uploads/2021/04/rau-muong-xao-toi-1.jpg",
+  },
+  {
+    name: "Đậu Que Xào",
+    price: 15000,
+    description:
+      "Đậu que xào là món ăn thanh đạm, dễ làm, giữ nguyên vị ngọt và độ giòn tự nhiên của đậu. Được xào nhanh trên lửa lớn cùng tỏi phi và gia vị vừa ăn, món ăn này thường được dùng để cân bằng khẩu vị trong bữa ăn, đặc biệt phù hợp cho người ăn chay hoặc thực đơn ăn kiêng.",
+    image:
+      "https://cdn.tgdd.vn/2021/07/CookRecipe/GalleryStep/dau-que-xao-toi-9.jpg",
+  },
+];
