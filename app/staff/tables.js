@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, FlatList, Alert, Dimensions } from "react-native";
+"use client";
+
+import { useState, useCallback } from "react";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Alert,
+  Dimensions,
+  RefreshControl,
+} from "react-native";
 import { useRouter } from "expo-router";
 import {
   Card,
@@ -17,12 +26,15 @@ import {
   useTheme,
   TouchableRipple,
   Searchbar,
+  FAB,
+  Appbar,
 } from "react-native-paper";
 import {
   getAllTables,
   updateTableStatus,
 } from "../../database/tableOperations";
 import { getOrdersByTable } from "../../database/orderOperations";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -32,18 +44,22 @@ export default function TablesScreen() {
   const router = useRouter();
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all");
   const [selectedTable, setSelectedTable] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    loadTables();
-    // Refresh tables every 30 seconds
-    const interval = setInterval(loadTables, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Load tables when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadTables();
+      // Refresh tables every 30 seconds
+      const interval = setInterval(loadTables, 30000);
+      return () => clearInterval(interval);
+    }, [])
+  );
 
   const loadTables = async () => {
     try {
@@ -52,11 +68,17 @@ export default function TablesScreen() {
       setTables(tableData);
     } catch (error) {
       console.error("Failed to load tables:", error);
-      Alert.alert("Error", "Failed to load tables");
+      Alert.alert("Lỗi", "Không thể tải danh sách bàn");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadTables();
+  }, []);
 
   const handleStatusUpdate = async (tableId, status) => {
     try {
@@ -64,7 +86,7 @@ export default function TablesScreen() {
       loadTables();
     } catch (error) {
       console.error("Failed to update table status:", error);
-      Alert.alert("Error", error.message || "Failed to update table status");
+      Alert.alert("Lỗi", error.message || "Không thể cập nhật trạng thái bàn");
     }
   };
 
@@ -74,11 +96,11 @@ export default function TablesScreen() {
       if (orders.length > 0) {
         router.push(`/staff/order-details?id=${orders[0].id}`);
       } else {
-        Alert.alert("Info", "No active orders for this table");
+        Alert.alert("Thông báo", "Không có đơn hàng đang xử lý cho bàn này");
       }
     } catch (error) {
       console.error("Failed to get table orders:", error);
-      Alert.alert("Error", "Failed to get table orders");
+      Alert.alert("Lỗi", "Không thể lấy thông tin đơn hàng");
     }
   };
 
@@ -115,13 +137,13 @@ export default function TablesScreen() {
   const getStatusText = (status) => {
     switch (status) {
       case "empty":
-        return "Available";
+        return "Còn Trống";
       case "occupied":
-        return "Occupied";
+        return "Đang Sử Dụng";
       case "reserved":
-        return "Reserved";
+        return "Đã Đặt Trước";
       case "maintenance":
-        return "Maintenance";
+        return "Bảo Trì";
       default:
         return status.charAt(0).toUpperCase() + status.slice(1);
     }
@@ -138,13 +160,19 @@ export default function TablesScreen() {
 
   // Group tables by section
   const tablesBySection = filteredTables.reduce((acc, table) => {
-    const section = table.section || "Uncategorized";
+    const section = table.section || "Chưa Phân Loại";
     if (!acc[section]) {
       acc[section] = [];
     }
     acc[section].push(table);
     return acc;
   }, {});
+
+  // Convert grouped tables to sections for SectionList
+  const sections = Object.keys(tablesBySection).map((section) => ({
+    title: section,
+    data: tablesBySection[section],
+  }));
 
   // Count tables by status
   const tableCounts = tables.reduce(
@@ -165,7 +193,13 @@ export default function TablesScreen() {
   };
 
   const renderTableItem = ({ item }) => (
-    <Card style={styles.tableCard} mode="elevated">
+    <Card
+      style={[
+        styles.tableCard,
+        item.status === "occupied" && styles.occupiedTableCard,
+      ]}
+      mode="elevated"
+    >
       <TouchableRipple
         onPress={() => {
           if (item.status === "occupied") {
@@ -189,7 +223,9 @@ export default function TablesScreen() {
                   color={getStatusColor(item.status)}
                 />
                 <View style={styles.tableNameContainer}>
-                  <Text style={styles.tableName}>Table {item.name}</Text>
+                  <Text variant="titleMedium" style={styles.tableName}>
+                    Bàn {item.name}
+                  </Text>
                   <View style={styles.tableDetailsContainer}>
                     <View style={styles.tableDetailItem}>
                       <IconButton
@@ -198,7 +234,7 @@ export default function TablesScreen() {
                         style={styles.detailIcon}
                         iconColor={theme.colors.outline}
                       />
-                      <Text style={styles.tableDetailText}>
+                      <Text variant="bodySmall" style={styles.tableDetailText}>
                         {item.capacity}
                       </Text>
                     </View>
@@ -209,7 +245,9 @@ export default function TablesScreen() {
                         style={styles.detailIcon}
                         iconColor={theme.colors.outline}
                       />
-                      <Text style={styles.tableDetailText}>{item.section}</Text>
+                      <Text variant="bodySmall" style={styles.tableDetailText}>
+                        {item.section}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -238,8 +276,11 @@ export default function TablesScreen() {
             {item.active_order_id && (
               <Surface style={styles.orderInfoCard} elevation={0}>
                 <View style={styles.orderInfoHeader}>
-                  <Text style={styles.orderInfoTitle}>Active Order</Text>
+                  <Text variant="labelLarge" style={styles.orderInfoTitle}>
+                    Đơn Hàng Đang Xử Lý
+                  </Text>
                   <Badge
+                    size={22}
                     style={[
                       styles.orderBadge,
                       { backgroundColor: theme.colors.primary },
@@ -256,8 +297,8 @@ export default function TablesScreen() {
                       style={styles.detailIcon}
                       iconColor={theme.colors.primary}
                     />
-                    <Text style={styles.orderDetailText}>
-                      {item.item_count || 0} items
+                    <Text variant="bodyMedium" style={styles.orderDetailText}>
+                      {item.item_count || 0} món
                     </Text>
                   </View>
                   <View style={styles.orderDetailItem}>
@@ -267,8 +308,8 @@ export default function TablesScreen() {
                       style={styles.detailIcon}
                       iconColor={theme.colors.primary}
                     />
-                    <Text style={styles.orderDetailText}>
-                      ${item.active_order_amount?.toFixed(2) || "0.00"}
+                    <Text variant="bodyMedium" style={styles.orderDetailText}>
+                      {item.active_order_amount?.toFixed(2) || "0.00"} đ
                     </Text>
                   </View>
                 </View>
@@ -287,7 +328,7 @@ export default function TablesScreen() {
                   router.push(`/staff/create-order?tableId=${item.id}`)
                 }
               >
-                New Order
+                Tạo Đơn Hàng
               </Button>
             ) : item.status === "occupied" ? (
               <Button
@@ -295,7 +336,7 @@ export default function TablesScreen() {
                 icon="eye"
                 onPress={() => handleViewOrders(item.id)}
               >
-                View Order
+                Xem Đơn Hàng
               </Button>
             ) : (
               <View style={{ flex: 1 }} />
@@ -323,45 +364,64 @@ export default function TablesScreen() {
           style={styles.sectionIcon}
           iconColor={theme.colors.primary}
         />
-        <Text style={styles.sectionTitle}>{section}</Text>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          {section.title}
+        </Text>
       </View>
-      <Text style={styles.sectionCount}>{section.tables.length} tables</Text>
+      <Text variant="bodySmall" style={styles.sectionCount}>
+        {section.data.length} bàn
+      </Text>
     </View>
   );
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{tableCounts.total}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: getStatusColor("empty") }]}>
+        {/* <Surface style={styles.statCard} elevation={0}>
+          <Text variant="headlineSmall" style={styles.statValue}>
+            {tableCounts.total}
+          </Text>
+          <Text variant="labelSmall" style={styles.statLabel}>
+            Tổng Số
+          </Text>
+        </Surface> */}
+        <Surface style={styles.statCard} elevation={0}>
+          <Text
+            variant="headlineSmall"
+            style={[styles.statValue, { color: getStatusColor("empty") }]}
+          >
             {tableCounts.empty}
           </Text>
-          <Text style={styles.statLabel}>Available</Text>
-        </View>
-        <View style={styles.statCard}>
+          <Text variant="labelSmall" style={styles.statLabel}>
+            Còn Trống
+          </Text>
+        </Surface>
+        <Surface style={styles.statCard} elevation={0}>
           <Text
+            variant="headlineSmall"
             style={[styles.statValue, { color: getStatusColor("occupied") }]}
           >
             {tableCounts.occupied}
           </Text>
-          <Text style={styles.statLabel}>Occupied</Text>
-        </View>
-        <View style={styles.statCard}>
+          <Text variant="labelSmall" style={styles.statLabel}>
+            Đang Sử Dụng
+          </Text>
+        </Surface>
+        <Surface style={styles.statCard} elevation={0}>
           <Text
+            variant="headlineSmall"
             style={[styles.statValue, { color: getStatusColor("reserved") }]}
           >
             {tableCounts.reserved}
           </Text>
-          <Text style={styles.statLabel}>Reserved</Text>
-        </View>
+          <Text variant="labelSmall" style={styles.statLabel}>
+            Đã Đặt Trước
+          </Text>
+        </Surface>
       </View>
 
       <Searchbar
-        placeholder="Search tables..."
+        placeholder="Tìm kiếm bàn..."
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchBar}
@@ -372,10 +432,10 @@ export default function TablesScreen() {
         value={filter}
         onValueChange={setFilter}
         buttons={[
-          { value: "all", label: "All" },
+          { value: "all", label: "Tất Cả" },
           {
             value: "empty",
-            label: "Available",
+            label: "Còn Trống",
             icon: "check-circle",
             style:
               filter === "empty"
@@ -384,7 +444,7 @@ export default function TablesScreen() {
           },
           {
             value: "occupied",
-            label: "Occupied",
+            label: "Đang Sử Dụng",
             icon: "silverware-fork-knife",
             style:
               filter === "occupied"
@@ -393,7 +453,7 @@ export default function TablesScreen() {
           },
           {
             value: "reserved",
-            label: "Reserved",
+            label: "Đã Đặt Trước",
             icon: "calendar-clock",
             style:
               filter === "reserved"
@@ -410,39 +470,125 @@ export default function TablesScreen() {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <FlatList
-        data={filteredTables}
-        renderItem={renderTableItem}
-        keyExtractor={(item) => item.id.toString()}
-        refreshing={loading}
-        onRefresh={loadTables}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyContainer}>
-              <IconButton
-                icon="table-chair"
-                size={80}
-                iconColor={theme.colors.outlineVariant}
-              />
-              <Text style={styles.emptyTitle}>No tables found</Text>
-              <Text style={styles.emptySubtitle}>
-                {searchQuery || filter !== "all"
-                  ? "Try adjusting your filters"
-                  : "Add tables to get started"}
-              </Text>
+      <Appbar.Header style={styles.appbarHeader}>
+        <Appbar.BackAction onPress={() => router.back()} />
+        <Appbar.Content title="Quản Lý Bàn" />
+        <Appbar.Action icon="refresh" onPress={loadTables} />
+        <Appbar.Action
+          icon="cog"
+          onPress={() => router.push("/staff/manage-tables")}
+        />
+      </Appbar.Header>
+
+      {isTablet ? (
+        <FlatList
+          data={sections}
+          renderItem={({ item: section }) => (
+            <View>
+              {renderSectionHeader({ section })}
+              <View style={styles.gridContainer}>
+                {section.data.map((item) => (
+                  <View key={item.id} style={styles.gridItem}>
+                    {renderTableItem({ item })}
+                  </View>
+                ))}
+              </View>
             </View>
-          ) : (
-            <ActivityIndicator
-              size="large"
-              style={styles.loader}
-              color={theme.colors.primary}
+          )}
+          keyExtractor={(item) => item.title}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.primary]}
             />
-          )
-        }
-      />
+          }
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyContainer}>
+                <IconButton
+                  icon="table-chair"
+                  size={80}
+                  iconColor={theme.colors.outlineVariant}
+                />
+                <Text variant="titleLarge" style={styles.emptyTitle}>
+                  Không tìm thấy bàn nào
+                </Text>
+                <Text variant="bodyMedium" style={styles.emptySubtitle}>
+                  {searchQuery || filter !== "all"
+                    ? "Hãy điều chỉnh bộ lọc của bạn"
+                    : "Thêm bàn để bắt đầu"}
+                </Text>
+                <Button
+                  mode="contained"
+                  icon="plus"
+                  onPress={() => router.push("/staff/manage-tables")}
+                  style={styles.emptyButton}
+                >
+                  Thêm Bàn
+                </Button>
+              </View>
+            ) : (
+              <ActivityIndicator
+                size="large"
+                style={styles.loader}
+                color={theme.colors.primary}
+              />
+            )
+          }
+        />
+      ) : (
+        <FlatList
+          data={filteredTables}
+          renderItem={renderTableItem}
+          keyExtractor={(item) => item.id.toString()}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.primary]}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyContainer}>
+                <IconButton
+                  icon="table-chair"
+                  size={80}
+                  iconColor={theme.colors.outlineVariant}
+                />
+                <Text variant="titleLarge" style={styles.emptyTitle}>
+                  Không tìm thấy bàn nào
+                </Text>
+                <Text variant="bodyMedium" style={styles.emptySubtitle}>
+                  {searchQuery || filter !== "all"
+                    ? "Hãy điều chỉnh bộ lọc của bạn"
+                    : "Thêm bàn để bắt đầu"}
+                </Text>
+                <Button
+                  mode="contained"
+                  icon="plus"
+                  onPress={() => router.push("/staff/manage-tables")}
+                  style={styles.emptyButton}
+                >
+                  Thêm Bàn
+                </Button>
+              </View>
+            ) : (
+              <ActivityIndicator
+                size="large"
+                style={styles.loader}
+                color={theme.colors.primary}
+              />
+            )
+          }
+        />
+      )}
 
       <Menu
         visible={menuVisible}
@@ -461,7 +607,7 @@ export default function TablesScreen() {
                 handleStatusUpdate(selectedTable, "empty");
                 setMenuVisible(false);
               }}
-              title="Mark as Available"
+              title="Đánh dấu là Còn Trống"
               disabled={
                 tables.find((t) => t.id === selectedTable)?.status === "empty"
               }
@@ -472,7 +618,7 @@ export default function TablesScreen() {
                 handleStatusUpdate(selectedTable, "occupied");
                 setMenuVisible(false);
               }}
-              title="Mark as Occupied"
+              title="Đánh dấu là Đang Sử Dụng"
               disabled={
                 tables.find((t) => t.id === selectedTable)?.status ===
                 "occupied"
@@ -484,7 +630,7 @@ export default function TablesScreen() {
                 handleStatusUpdate(selectedTable, "reserved");
                 setMenuVisible(false);
               }}
-              title="Mark as Reserved"
+              title="Đánh dấu là Đã Đặt Trước"
               disabled={
                 tables.find((t) => t.id === selectedTable)?.status ===
                 "reserved"
@@ -496,7 +642,7 @@ export default function TablesScreen() {
                 handleStatusUpdate(selectedTable, "maintenance");
                 setMenuVisible(false);
               }}
-              title="Mark as Maintenance"
+              title="Đánh dấu là Bảo Trì"
               disabled={
                 tables.find((t) => t.id === selectedTable)?.status ===
                 "maintenance"
@@ -505,6 +651,13 @@ export default function TablesScreen() {
           </>
         )}
       </Menu>
+
+      <FAB
+        icon="plus"
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        onPress={() => router.push("/staff/manage-tables")}
+        color={theme.colors.onPrimary}
+      />
     </View>
   );
 }
@@ -514,6 +667,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
+  appbarHeader: {
+    backgroundColor: "#fff",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
   headerContainer: {
     padding: 16,
     backgroundColor: "#fff",
@@ -521,6 +682,10 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 8,
     elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   statsContainer: {
     flexDirection: "row",
@@ -529,6 +694,10 @@ const styles = StyleSheet.create({
   },
   statCard: {
     alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
+    minWidth: 70,
   },
   statValue: {
     fontSize: 20,
@@ -537,6 +706,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: "#666",
+    marginTop: 4,
   },
   searchBar: {
     marginBottom: 16,
@@ -550,11 +720,18 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingTop: 0,
+    paddingBottom: 80, // Space for FAB
   },
   tableCard: {
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  occupiedTableCard: {
+    borderColor: "#FFCDD2",
+    borderWidth: 1,
   },
   tableCardContent: {
     paddingVertical: 16,
@@ -649,7 +826,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: "#F3F4F6",
     borderRadius: 8,
@@ -689,10 +866,30 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: "center",
   },
+  emptyButton: {
+    marginTop: 8,
+  },
   loader: {
     marginTop: 40,
   },
   menu: {
     borderRadius: 8,
+  },
+  fab: {
+    position: "absolute",
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+  },
+  gridItem: {
+    width: isTablet ? "48%" : "100%",
+    paddingHorizontal: 8,
+    marginBottom: 16,
   },
 });

@@ -60,7 +60,7 @@ export default function AddItemsScreen() {
       setCategories(uniqueCategories);
     } catch (error) {
       console.error("Failed to load menu items:", error);
-      Alert.alert("Error", "Failed to load menu items");
+      Alert.alert("Lỗi", "Không thể tải danh sách món ăn");
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export default function AddItemsScreen() {
 
   const handleAddItems = async () => {
     if (selectedItems.length === 0) {
-      Alert.alert("Error", "Please select at least one item");
+      Alert.alert("Lỗi", "Vui lòng chọn ít nhất một món");
       return;
     }
 
@@ -113,21 +113,21 @@ export default function AddItemsScreen() {
       const result = await addOrderItems(parseInt(orderId), orderItems);
 
       if (!result) {
-        throw new Error("Failed to add items - no response from server");
+        throw new Error("Không thể thêm món - không có phản hồi từ máy chủ");
       }
 
       Alert.alert(
-        "Success",
-        `Added ${result.items_added} items to order\nTotal: ${formatCurrency(
+        "Thành công",
+        `Đã thêm ${result.items_added} món vào đơn hàng\nTổng: ${formatCurrency(
           result.new_total
         )}`,
         [
           {
-            text: "View Order",
+            text: "Xem Đơn Hàng",
             onPress: () => router.push(`/staff/order-details?id=${orderId}`),
           },
           {
-            text: "Add More Items",
+            text: "Thêm Món Khác",
             onPress: () => {
               setSelectedItems([]);
               setSearchQuery("");
@@ -139,8 +139,8 @@ export default function AddItemsScreen() {
     } catch (error) {
       console.error("Failed to add items:", error);
       Alert.alert(
-        "Error",
-        error.message || "Failed to add items to order. Please try again."
+        "Lỗi",
+        error.message || "Không thể thêm món vào đơn hàng. Vui lòng thử lại."
       );
     } finally {
       setLoading(false);
@@ -219,14 +219,14 @@ export default function AddItemsScreen() {
   return (
     <View style={styles.container}>
       <Surface style={styles.header} elevation={2}>
-        <Text style={styles.headerTitle}>Add Items to Order</Text>
-        <Text style={styles.headerSubtitle}>Table {tableName}</Text>
+        <Text style={styles.headerTitle}>Thêm Món Vào Đơn Hàng</Text>
+        <Text style={styles.headerSubtitle}>Bàn {tableName}</Text>
       </Surface>
 
       <View style={styles.searchHeader}>
         <TextInput
           mode="outlined"
-          placeholder="Search menu items..."
+          placeholder="Tìm kiếm món ăn..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchInput}
@@ -235,7 +235,7 @@ export default function AddItemsScreen() {
           mode="contained-tonal"
           onPress={() => setShowCategoryDialog(true)}
         >
-          {selectedCategory === "all" ? "All Categories" : selectedCategory}
+          {selectedCategory === "all" ? "Tất Cả Danh Mục" : selectedCategory}
         </Button>
       </View>
 

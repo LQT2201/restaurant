@@ -9,13 +9,10 @@ export const initDb = async () => {
     try {
       db = await SQLite.openDatabaseAsync("restaurant.db");
       // Enable WAL mode for better performance
-      // // Drop all tables
-      // console.log("Dropping all tables...");
-      // await dropAllTables(db);
       await db.execAsync("PRAGMA journal_mode = WAL;");
       console.log("Database initialized:", db);
     } catch (error) {
-      console.error("Error initializing database:", error);
+      console.error("Lỗi khởi tạo cơ sở dữ liệu:", error);
       throw error;
     }
   }
@@ -24,14 +21,47 @@ export const initDb = async () => {
 
 // Function to drop all tables
 export const dropAllTables = async (database) => {
-  await database.execAsync(`
-    DROP TABLE IF EXISTS order_items;
-    DROP TABLE IF EXISTS orders;
-    DROP TABLE IF EXISTS menu_items;
-    DROP TABLE IF EXISTS menu_categories;
-    DROP TABLE IF EXISTS tables;
-    DROP TABLE IF EXISTS staff;
-  `);
+  try {
+    await database.execAsync(`
+      DROP TABLE IF EXISTS order_items;
+      DROP TABLE IF EXISTS orders;
+      DROP TABLE IF EXISTS menu_items;
+      DROP TABLE IF EXISTS menu_categories;
+      DROP TABLE IF EXISTS tables;
+      DROP TABLE IF EXISTS staff;
+    `);
+    console.log("Đã xóa tất cả bảng trong cơ sở dữ liệu");
+  } catch (error) {
+    console.error("Lỗi khi xóa bảng:", error);
+    throw error;
+  }
+};
+
+// Function to drop entire database
+export const dropDatabase = async () => {
+  try {
+    const database = await initDb();
+    if (!database) {
+      throw new Error("Không thể kết nối đến cơ sở dữ liệu");
+    }
+
+    // Drop all tables first
+    await dropAllTables(database);
+
+    // Close the database connection
+    await database.closeAsync();
+
+    // Delete the database file
+    await SQLite.deleteDatabaseAsync("restaurant.db");
+
+    // Reset the global database object
+    db = null;
+
+    console.log("Đã xóa toàn bộ cơ sở dữ liệu thành công");
+  } catch (error) {
+    console.error("Lỗi khi xóa cơ sở dữ liệu:", error);
+    throw error;
+  }
 };
 
 // Initialize database schema and sample data

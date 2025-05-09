@@ -78,7 +78,8 @@ export const getOrderById = async (orderId) => {
     const query = `
       SELECT o.*, 
              t.name as table_name,
-             s.name as staff_name
+             IFNULL(s.name, 'Nhân viên mặc định') as staff_name,
+             s.id as staff_id
       FROM orders o
       LEFT JOIN tables t ON o.table_id = t.id
       LEFT JOIN staff s ON o.staff_id = s.id
@@ -94,8 +95,9 @@ export const getOrderById = async (orderId) => {
     // Get order items
     const itemsQuery = `
       SELECT oi.*,
-             mi.name as item_name,
-             mi.description as item_description,
+             mi.name,
+             mi.description,
+             mi.image_url,
              c.name as category_name
       FROM order_items oi
       LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id

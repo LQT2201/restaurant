@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react";
 import { Redirect } from "expo-router";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { ActivityIndicator, View, StyleSheet, Text } from "react-native";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Index() {
@@ -11,6 +11,7 @@ export default function Index() {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 16 }}>Đang kiểm tra đăng nhập...</Text>
       </View>
     );
   }

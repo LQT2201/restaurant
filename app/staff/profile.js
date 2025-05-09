@@ -14,6 +14,7 @@ import {
   List,
   Divider,
   useTheme,
+  Appbar,
 } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -27,15 +28,15 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     Alert.alert(
-      "Confirm Logout",
-      "Are you sure you want to logout?",
+      "Xác Nhận Đăng Xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
       [
         {
-          text: "Cancel",
+          text: "Hủy",
           style: "cancel",
         },
         {
-          text: "Logout",
+          text: "Đăng Xuất",
           onPress: async () => {
             try {
               setLoading(true);
@@ -43,7 +44,7 @@ export default function ProfileScreen() {
               router.replace("/login");
             } catch (error) {
               console.error("Logout failed:", error);
-              Alert.alert("Error", "Failed to logout. Please try again.");
+              Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại.");
             } finally {
               setLoading(false);
             }
@@ -74,143 +75,158 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView
+    <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.contentContainer}
     >
-      {/* Header with user info */}
-      <Surface style={styles.header} elevation={0}>
-        <View style={styles.avatarContainer}>
-          <Avatar.Text
-            size={80}
-            label={userInfo?.name?.charAt(0)?.toUpperCase() || "U"}
-            style={[styles.avatar, { backgroundColor: getAvatarColor() }]}
-            labelStyle={styles.avatarText}
-          />
-          <TouchableOpacity
-            style={[
-              styles.editButton,
-              { backgroundColor: theme.colors.primary },
-            ]}
-            onPress={() => router.push("/profile/edit")}
+      <Appbar.Header style={styles.appbarHeader}>
+        <Appbar.BackAction onPress={() => router.back()} />
+        <Appbar.Content title="Hồ Sơ Cá Nhân" />
+        <Appbar.Action icon="logout" onPress={handleLogout} />
+      </Appbar.Header>
+
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* Header with user info */}
+        <Surface style={styles.header} elevation={0}>
+          <View style={styles.avatarContainer}>
+            <Avatar.Text
+              size={80}
+              label={userInfo?.name?.charAt(0)?.toUpperCase() || "U"}
+              style={[styles.avatar, { backgroundColor: getAvatarColor() }]}
+              labelStyle={styles.avatarText}
+            />
+            <TouchableOpacity
+              style={[
+                styles.editButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={() => router.push("/profile/edit")}
+            >
+              <MaterialCommunityIcons name="pencil" size={16} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          <Text
+            style={[styles.name, { color: theme.colors.text }]}
+            numberOfLines={1}
           >
-            <MaterialCommunityIcons name="pencil" size={16} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        <Text
-          style={[styles.name, { color: theme.colors.text }]}
-          numberOfLines={1}
-        >
-          {userInfo?.name || "User"}
-        </Text>
-        <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>
-            {userInfo?.role ? userInfo.role.toUpperCase() : "STAFF"}
+            {userInfo?.name || "User"}
           </Text>
-        </View>
-      </Surface>
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleText}>
+              {userInfo?.role ? userInfo.role.toUpperCase() : "STAFF"}
+            </Text>
+          </View>
+        </Surface>
 
-      {/* Stats section */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>24</Text>
-          <Text style={styles.statLabel}>Orders</Text>
+        {/* Stats section */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>24</Text>
+            <Text style={styles.statLabel}>Đơn Hàng</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>98%</Text>
+            <Text style={styles.statLabel}>Đánh Giá</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>3.5y</Text>
+            <Text style={styles.statLabel}>Kinh Nghiệm</Text>
+          </View>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>98%</Text>
-          <Text style={styles.statLabel}>Rating</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>3.5y</Text>
-          <Text style={styles.statLabel}>Experience</Text>
-        </View>
-      </View>
 
-      {/* Menu options */}
-      <Surface style={[styles.menuContainer, { elevation: 2 }]}>
-        <List.Section>
-          <List.Item
-            title="My Profile"
-            description="Update your personal information"
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon="account"
-                color={theme.colors.primary}
-              />
-            )}
-            onPress={() => router.push("/profile/edit")}
-            style={styles.listItem}
-          />
-          <Divider style={styles.divider} />
-          <List.Item
-            title="Active Orders"
-            description="View your current orders"
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon="clipboard-list"
-                color={theme.colors.primary}
-              />
-            )}
-            onPress={() => router.push("/staff/active-orders")}
-            style={styles.listItem}
-          />
-          <Divider style={styles.divider} />
-          <List.Item
-            title="Completed Orders"
-            description="View order history"
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon="clipboard-check"
-                color={theme.colors.primary}
-              />
-            )}
-            onPress={() => router.push("/staff/completed-orders")}
-            style={styles.listItem}
-          />
-          <Divider style={styles.divider} />
-          <List.Item
-            title="Tables"
-            description="Manage restaurant tables"
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon="table-chair"
-                color={theme.colors.primary}
-              />
-            )}
-            onPress={() => router.push("/staff/tables")}
-            style={styles.listItem}
-          />
-        </List.Section>
-      </Surface>
+        {/* Menu options */}
+        <Surface style={[styles.menuContainer, { elevation: 2 }]}>
+          <List.Section>
+            <List.Item
+              title="Hồ Sơ Của Tôi"
+              description="Cập nhật thông tin cá nhân"
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon="account"
+                  color={theme.colors.primary}
+                />
+              )}
+              onPress={() => router.push("/profile/edit")}
+              style={styles.listItem}
+            />
+            <Divider style={styles.divider} />
+            <List.Item
+              title="Đơn Hàng Đang Xử Lý"
+              description="Xem các đơn hàng hiện tại"
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon="clipboard-list"
+                  color={theme.colors.primary}
+                />
+              )}
+              onPress={() => router.push("/staff/active-orders")}
+              style={styles.listItem}
+            />
+            <Divider style={styles.divider} />
+            <List.Item
+              title="Đơn Hàng Hoàn Thành"
+              description="Xem lịch sử đơn hàng"
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon="clipboard-check"
+                  color={theme.colors.primary}
+                />
+              )}
+              onPress={() => router.push("/staff/completed-orders")}
+              style={styles.listItem}
+            />
+            <Divider style={styles.divider} />
+            <List.Item
+              title="Bàn"
+              description="Quản lý bàn nhà hàng"
+              left={(props) => (
+                <List.Icon
+                  {...props}
+                  icon="table-chair"
+                  color={theme.colors.primary}
+                />
+              )}
+              onPress={() => router.push("/staff/tables")}
+              style={styles.listItem}
+            />
+          </List.Section>
+        </Surface>
 
-      {/* Logout button */}
-      <View style={styles.footer}>
-        <Button
-          mode="outlined"
-          onPress={handleLogout}
-          loading={loading}
-          disabled={loading}
-          style={styles.logoutButton}
-          labelStyle={styles.logoutButtonText}
-          icon="logout"
-        >
-          Sign Out
-        </Button>
-      </View>
-    </ScrollView>
+        {/* Logout button */}
+        <View style={styles.footer}>
+          <Button
+            mode="outlined"
+            onPress={handleLogout}
+            loading={loading}
+            disabled={loading}
+            style={styles.logoutButton}
+            labelStyle={styles.logoutButtonText}
+            icon="logout"
+          >
+            Đăng Xuất
+          </Button>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  appbarHeader: {
+    backgroundColor: "#fff",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   contentContainer: {
     flexGrow: 1,

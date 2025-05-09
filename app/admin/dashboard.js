@@ -173,7 +173,7 @@ export default function DashboardScreen() {
       >
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={{ marginTop: 16, color: theme.colors.onBackground }}>
-          Loading dashboard...
+          Đang tải bảng điều khiển...
         </Text>
       </View>
     );
@@ -203,7 +203,7 @@ export default function DashboardScreen() {
                 { color: theme.colors.onPrimaryContainer },
               ]}
             >
-              Welcome back, {userInfo?.name?.split(" ")[0]}
+              Chào mừng trở lại, {userInfo?.name?.split(" ")[0]}
             </Text>
             <Text
               style={[
@@ -235,20 +235,20 @@ export default function DashboardScreen() {
       {/* Sales Overview */}
       <Card style={styles.salesCard}>
         <Card.Content>
-          <Text style={styles.sectionTitle}>Sales Overview</Text>
+          <Text style={styles.sectionTitle}>Tổng Quan Doanh Thu</Text>
           <View style={styles.salesContainer}>
             <View style={styles.salesItem}>
               <Text style={styles.salesValue}>
                 {formatCurrency(stats.sales.today)}
               </Text>
-              <Text style={styles.salesLabel}>Today</Text>
+              <Text style={styles.salesLabel}>Hôm Nay</Text>
             </View>
             <View style={styles.salesDivider} />
             <View style={styles.salesItem}>
               <Text style={styles.salesValue}>
                 {formatCurrency(stats.sales.weekly)}
               </Text>
-              <Text style={styles.salesLabel}>This Week</Text>
+              <Text style={styles.salesLabel}>Tuần Này</Text>
             </View>
           </View>
           <Button
@@ -260,7 +260,7 @@ export default function DashboardScreen() {
             onPress={() => router.push("/admin/reports")}
             icon="chart-bar"
           >
-            View Reports
+            Xem Báo Cáo
           </Button>
         </Card.Content>
       </Card>
@@ -268,7 +268,7 @@ export default function DashboardScreen() {
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
         <StatCard
-          title="Tables"
+          title="Bàn"
           icon="table-furniture"
           value={stats.tables.total}
           color="#6200EE"
@@ -278,7 +278,7 @@ export default function DashboardScreen() {
           <View style={styles.tableStatsContent}>
             <View style={styles.tableOccupancyContainer}>
               <View style={styles.tableOccupancyLabels}>
-                <Text style={styles.tableOccupancyLabel}>Occupancy</Text>
+                <Text style={styles.tableOccupancyLabel}>Tỷ lệ sử dụng</Text>
                 <Text style={styles.tableOccupancyPercentage}>
                   {formatPercentage(tableOccupancyPercentage)}
                 </Text>
@@ -298,7 +298,7 @@ export default function DashboardScreen() {
                   ]}
                 />
                 <Text style={styles.tableStatText}>
-                  {stats.tables.occupied} occupied
+                  {stats.tables.occupied} đang sử dụng
                 </Text>
               </View>
               <View style={styles.tableStatItem}>
@@ -309,7 +309,7 @@ export default function DashboardScreen() {
                   ]}
                 />
                 <Text style={styles.tableStatText}>
-                  {stats.tables.available} available
+                  {stats.tables.available} còn trống
                 </Text>
               </View>
             </View>
@@ -317,7 +317,7 @@ export default function DashboardScreen() {
         </StatCard>
 
         <StatCard
-          title="Orders"
+          title="Đơn Hàng"
           icon="receipt"
           value={stats.orders.active}
           color="#03A9F4"
@@ -329,20 +329,20 @@ export default function DashboardScreen() {
               <Text style={styles.orderStatValue}>
                 {formatNumber(stats.orders.active)}
               </Text>
-              <Text style={styles.orderStatLabel}>Active</Text>
+              <Text style={styles.orderStatLabel}>Đang xử lý</Text>
             </View>
             <View style={styles.orderStatDivider} />
             <View style={styles.orderStatItem}>
               <Text style={styles.orderStatValue}>
                 {formatNumber(stats.orders.completed)}
               </Text>
-              <Text style={styles.orderStatLabel}>Completed Today</Text>
+              <Text style={styles.orderStatLabel}>Hoàn thành hôm nay</Text>
             </View>
           </View>
         </StatCard>
 
         <StatCard
-          title="Menu Items"
+          title="Món Ăn"
           icon="food"
           value={stats.menu.total}
           color="#4CAF50"
@@ -350,12 +350,12 @@ export default function DashboardScreen() {
           theme={theme}
         >
           <Text style={styles.menuItemsSubtitle}>
-            {formatNumber(stats.menu.total)} items available on your menu
+            {formatNumber(stats.menu.total)} món ăn có sẵn trong thực đơn
           </Text>
         </StatCard>
 
         <StatCard
-          title="Staff"
+          title="Nhân Viên"
           icon="account-group"
           value={stats.staff.total}
           color="#FF5722"
@@ -375,7 +375,7 @@ export default function DashboardScreen() {
                   color={theme.colors.primary}
                 />
                 <Text style={styles.staffRoleText}>
-                  {formatNumber(stats.staff.admin)} Admin
+                  {formatNumber(stats.staff.admin)} Quản trị viên
                 </Text>
               </View>
               <View style={styles.staffRoleItem}>
@@ -389,7 +389,7 @@ export default function DashboardScreen() {
                   color={theme.colors.secondary}
                 />
                 <Text style={styles.staffRoleText}>
-                  {formatNumber(stats.staff.staff)} Staff
+                  {formatNumber(stats.staff.staff)} Nhân viên
                 </Text>
               </View>
             </View>
@@ -400,33 +400,33 @@ export default function DashboardScreen() {
       {/* Quick Actions */}
       <Card style={styles.quickActionsCard}>
         <Card.Content>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Thao Tác Nhanh</Text>
 
           <View style={styles.quickActionsGrid}>
             <QuickActionButton
               icon="table-furniture"
-              label="Tables"
+              label="Bàn"
               onPress={() => router.push("/admin/tables")}
               color="#6200EE"
               theme={theme}
             />
             <QuickActionButton
               icon="food"
-              label="Menu"
+              label="Thực Đơn"
               onPress={() => router.push("/admin/menu")}
               color="#4CAF50"
               theme={theme}
             />
             <QuickActionButton
               icon="account-group"
-              label="Staff"
+              label="Nhân Viên"
               onPress={() => router.push("/admin/staff")}
               color="#FF5722"
               theme={theme}
             />
             <QuickActionButton
               icon="chart-bar"
-              label="Reports"
+              label="Báo Cáo"
               onPress={() => router.push("/admin/reports")}
               color="#03A9F4"
               theme={theme}

@@ -9,6 +9,7 @@ import {
   Divider,
   ActivityIndicator,
   SegmentedButtons,
+  Appbar,
 } from "react-native-paper";
 import {
   getActiveOrders,
@@ -35,7 +36,7 @@ export default function ActiveOrdersScreen() {
       setOrders(activeOrders);
     } catch (error) {
       console.error("Failed to load active orders:", error);
-      Alert.alert("Error", "Failed to load active orders");
+      Alert.alert("Lỗi", "Không thể tải danh sách đơn hàng đang xử lý");
     } finally {
       setLoading(false);
     }
@@ -44,11 +45,11 @@ export default function ActiveOrdersScreen() {
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       await updateOrderStatus(orderId, newStatus);
-      Alert.alert("Success", "Order status updated");
+      Alert.alert("Thành công", "Đã cập nhật trạng thái đơn hàng");
       loadOrders();
     } catch (error) {
       console.error("Failed to update order status:", error);
-      Alert.alert("Error", "Failed to update order status");
+      Alert.alert("Lỗi", "Không thể cập nhật trạng thái đơn hàng");
     }
   };
 
@@ -74,7 +75,7 @@ export default function ActiveOrdersScreen() {
     <Surface style={styles.orderCard} elevation={2}>
       <View style={styles.orderHeader}>
         <View>
-          <Text style={styles.tableText}>Table {item.table_name}</Text>
+          <Text style={styles.tableText}>Bàn {item.table_name}</Text>
           <Text style={styles.timeText}>
             {new Date(item.created_at).toLocaleTimeString()}
           </Text>
@@ -87,14 +88,20 @@ export default function ActiveOrdersScreen() {
             { backgroundColor: getStatusColor(item.status) },
           ]}
         >
-          {item.status.toUpperCase()}
+          {item.status === "pending"
+            ? "CHỜ XỬ LÝ"
+            : item.status === "preparing"
+            ? "ĐANG CHẾ BIẾN"
+            : item.status === "ready"
+            ? "SẴN SÀNG"
+            : item.status.toUpperCase()}
         </Chip>
       </View>
 
       <View style={styles.orderSummary}>
-        <Text>Items: {item.item_count}</Text>
+        <Text>Số món: {item.item_count}</Text>
         <Text style={styles.totalText}>
-          Total: ${item.total_amount?.toFixed(2)}
+          Tổng: ${item.total_amount?.toFixed(2)}
         </Text>
       </View>
 
@@ -105,14 +112,14 @@ export default function ActiveOrdersScreen() {
           mode="contained-tonal"
           onPress={() => router.push(`/staff/order-details?id=${item.id}`)}
         >
-          View Details
+          Xem Chi Tiết
         </Button>
         {item.status === "pending" && (
           <Button
             mode="contained"
             onPress={() => handleStatusUpdate(item.id, "preparing")}
           >
-            Start Preparing
+            Bắt Đầu Chế Biến
           </Button>
         )}
         {item.status === "preparing" && (
@@ -120,7 +127,7 @@ export default function ActiveOrdersScreen() {
             mode="contained"
             onPress={() => handleStatusUpdate(item.id, "ready")}
           >
-            Mark Ready
+            Đánh Dấu Sẵn Sàng
           </Button>
         )}
         {item.status === "ready" && (
@@ -128,7 +135,7 @@ export default function ActiveOrdersScreen() {
             mode="contained"
             onPress={() => handleStatusUpdate(item.id, "completed")}
           >
-            Complete Order
+            Hoàn Thành Đơn Hàng
           </Button>
         )}
       </View>
@@ -137,14 +144,20 @@ export default function ActiveOrdersScreen() {
 
   return (
     <View style={styles.container}>
+      <Appbar.Header style={styles.appbarHeader}>
+        <Appbar.BackAction onPress={() => router.back()} />
+        <Appbar.Content title="Đơn Hàng Đang Xử Lý" />
+        <Appbar.Action icon="refresh" onPress={loadOrders} />
+      </Appbar.Header>
+
       <SegmentedButtons
         value={filter}
         onValueChange={setFilter}
         buttons={[
-          { value: "all", label: "All" },
-          { value: "pending", label: "Pending" },
-          { value: "preparing", label: "Preparing" },
-          { value: "ready", label: "Ready" },
+          { value: "all", label: "Tất Cả" },
+          { value: "pending", label: "Chờ Xử Lý" },
+          { value: "preparing", label: "Đang Chế Biến" },
+          { value: "ready", label: "Sẵn Sàng" },
         ]}
         style={styles.filterButtons}
       />
@@ -160,7 +173,7 @@ export default function ActiveOrdersScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyContainer}>
-              <Text>No active orders found</Text>
+              <Text>Không tìm thấy đơn hàng đang xử lý nào</Text>
             </View>
           ) : (
             <ActivityIndicator size="large" style={styles.loader} />
@@ -175,6 +188,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  appbarHeader: {
+    backgroundColor: "#fff",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   filterButtons: {
     margin: 8,

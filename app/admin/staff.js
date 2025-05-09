@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, FlatList, Alert } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Alert,
+  Animated,
+  Dimensions,
+  StatusBar,
+  TouchableOpacity,
+} from "react-native";
 import {
   Surface,
   Text,
@@ -14,6 +23,8 @@ import {
   Chip,
   useTheme,
   ActivityIndicator,
+  Avatar,
+  Searchbar,
 } from "react-native-paper";
 import {
   getAllStaff,
@@ -22,11 +33,14 @@ import {
   deleteStaff,
   updateStaffPassword,
 } from "../../database/staffOperations";
+import * as Haptics from "expo-haptics";
 
 export default function StaffScreen() {
   const theme = useTheme();
   const [staff, setStaff] = useState([]);
+  const [filteredStaff, setFilteredStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [passwordDialogVisible, setPasswordDialogVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
@@ -35,21 +49,119 @@ export default function StaffScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("staff");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const fabAnim = useRef(new Animated.Value(100)).current;
+  const headerAnim = useRef(new Animated.Value(-50)).current;
+
+  // Animation refs for list items
+  const itemAnimations = useRef({});
+
+  // Initialize animations when component mounts
+  useEffect(() => {
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fabAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   useEffect(() => {
     loadStaff();
   }, []);
 
+  // Filter staff when search query changes
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredStaff(staff);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = staff.filter(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.username.toLowerCase().includes(query) ||
+          item.role.toLowerCase().includes(query)
+      );
+      setFilteredStaff(filtered);
+    }
+  }, [searchQuery, staff]);
+
+  // Initialize item animations when staff list changes
+  useEffect(() => {
+    staff.forEach((item, index) => {
+      if (!itemAnimations.current[item.id]) {
+        itemAnimations.current[item.id] = {
+          opacity: new Animated.Value(0),
+          translateY: new Animated.Value(50),
+          scale: new Animated.Value(0.8),
+        };
+
+        // Stagger the animations
+        const delay = index * 100;
+        Animated.parallel([
+          Animated.timing(itemAnimations.current[item.id].opacity, {
+            toValue: 1,
+            duration: 500,
+            delay,
+            useNativeDriver: true,
+          }),
+          Animated.timing(itemAnimations.current[item.id].translateY, {
+            toValue: 0,
+            duration: 500,
+            delay,
+            useNativeDriver: true,
+          }),
+          Animated.timing(itemAnimations.current[item.id].scale, {
+            toValue: 1,
+            duration: 500,
+            delay,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    });
+  }, [staff]);
+
   const loadStaff = async () => {
     try {
       setLoading(true);
+      setRefreshing(true);
       const staffData = await getAllStaff();
+
+      // Reset animations for new items
+      itemAnimations.current = {};
+
       setStaff(staffData);
+      setFilteredStaff(staffData);
     } catch (error) {
       console.error("Failed to load staff:", error);
-      Alert.alert("Error", "Failed to load staff");
+      Alert.alert("Lỗi", "Không thể tải danh sách nhân viên");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -60,12 +172,14 @@ export default function StaffScreen() {
       !password.trim() ||
       !confirmPassword.trim()
     ) {
-      Alert.alert("Error", "Please fill in all fields");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", "Mật khẩu không khớp");
       return;
     }
 
@@ -78,19 +192,22 @@ export default function StaffScreen() {
       };
 
       await addStaff(staffData);
-      Alert.alert("Success", "Staff member added successfully");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Thành công", "Đã thêm nhân viên thành công");
       setDialogVisible(false);
       resetForm();
       loadStaff();
     } catch (error) {
       console.error("Failed to add staff:", error);
-      Alert.alert("Error", error.message || "Failed to add staff");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", error.message || "Không thể thêm nhân viên");
     }
   };
 
   const handleUpdateStaff = async () => {
     if (!name.trim() || !username.trim() || !editingStaff) {
-      Alert.alert("Error", "Please fill in all fields");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
     }
 
@@ -102,61 +219,91 @@ export default function StaffScreen() {
       };
 
       await updateStaff(editingStaff.id, staffData);
-      Alert.alert("Success", "Staff member updated successfully");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Thành công", "Đã cập nhật thông tin nhân viên thành công");
       setDialogVisible(false);
       resetForm();
       loadStaff();
     } catch (error) {
       console.error("Failed to update staff:", error);
-      Alert.alert("Error", error.message || "Failed to update staff");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        "Lỗi",
+        error.message || "Không thể cập nhật thông tin nhân viên"
+      );
     }
   };
 
   const handleUpdatePassword = async () => {
     if (!password.trim() || !confirmPassword.trim() || !editingStaff) {
-      Alert.alert("Error", "Please fill in all fields");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", "Mật khẩu không khớp");
       return;
     }
 
     try {
       await updateStaffPassword(editingStaff.id, password.trim(), password);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPasswordDialogVisible(false);
       setPassword("");
       setConfirmPassword("");
-      Alert.alert("Success", "Password updated successfully");
+      Alert.alert("Thành công", "Đã cập nhật mật khẩu thành công");
     } catch (error) {
       console.error("Failed to update password:", error);
-      Alert.alert("Error", error.message || "Failed to update password");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Lỗi", error.message || "Không thể cập nhật mật khẩu");
     }
   };
 
   const handleDeleteStaff = (staffId, staffName) => {
-    Alert.alert(
-      "Delete Staff",
-      `Are you sure you want to delete ${staffName}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    Alert.alert("Xóa Nhân Viên", `Bạn có chắc chắn muốn xóa ${staffName}?`, [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            // Animate item removal
+            Animated.parallel([
+              Animated.timing(itemAnimations.current[staffId].opacity, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.timing(itemAnimations.current[staffId].translateY, {
+                toValue: 50,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.timing(itemAnimations.current[staffId].scale, {
+                toValue: 0.8,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+            ]).start(async () => {
               await deleteStaff(staffId);
-              Alert.alert("Success", "Staff member deleted successfully");
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success
+              );
+              Alert.alert("Thành công", "Đã xóa nhân viên thành công");
               loadStaff();
-            } catch (error) {
-              console.error("Failed to delete staff:", error);
-              Alert.alert("Error", error.message || "Failed to delete staff");
-            }
-          },
+            });
+          } catch (error) {
+            console.error("Failed to delete staff:", error);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert("Lỗi", error.message || "Không thể xóa nhân viên");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const resetForm = () => {
@@ -166,14 +313,18 @@ export default function StaffScreen() {
     setConfirmPassword("");
     setRole("staff");
     setEditingStaff(null);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const openAddDialog = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     resetForm();
     setDialogVisible(true);
   };
 
   const openEditDialog = (staffMember) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setEditingStaff(staffMember);
     setName(staffMember.name);
     setUsername(staffMember.username);
@@ -182,117 +333,229 @@ export default function StaffScreen() {
   };
 
   const openPasswordDialog = (staffMember) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setEditingStaff(staffMember);
     setPassword("");
     setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setPasswordDialogVisible(true);
   };
 
-  const renderStaffItem = ({ item }) => (
-    <Surface style={[styles.staffItem, { elevation: 2 }]}>
-      <View style={styles.staffInfo}>
-        <View style={styles.staffHeader}>
-          <Text style={[styles.staffName, { color: theme.colors.primary }]}>
-            {item.name}
-          </Text>
-          <Chip
-            mode="outlined"
-            style={[
-              styles.roleChip,
-              item.role === "admin"
-                ? { backgroundColor: theme.colors.errorContainer }
-                : { backgroundColor: theme.colors.secondaryContainer },
-            ]}
-            textStyle={styles.roleChipText}
-          >
-            {item.role === "admin" ? "Admin" : "Staff"}
-          </Chip>
-        </View>
-        <Text
-          style={[
-            styles.staffUsername,
-            { color: theme.colors.onSurfaceVariant },
-          ]}
-        >
-          @{item.username}
-        </Text>
+  // Get initials for avatar
+  const getInitials = (name) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((part) => part.charAt(0))
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // Get avatar color based on role
+  const getAvatarColor = (role) => {
+    return role === "admin" ? "#F44336" : "#6200ee";
+  };
+
+  const renderStaffItem = ({ item, index }) => {
+    // Get or create animation values for this item
+    if (!itemAnimations.current[item.id]) {
+      itemAnimations.current[item.id] = {
+        opacity: new Animated.Value(1),
+        translateY: new Animated.Value(0),
+        scale: new Animated.Value(1),
+      };
+    }
+
+    return (
+      <Animated.View
+        style={{
+          opacity: itemAnimations.current[item.id].opacity,
+          transform: [
+            { translateY: itemAnimations.current[item.id].translateY },
+            { scale: itemAnimations.current[item.id].scale },
+          ],
+        }}
+      >
+        <Surface style={styles.staffItem} elevation={3}>
+          <View style={styles.staffInfo}>
+            <View style={styles.staffHeader}>
+              <Avatar.Text
+                size={40}
+                label={getInitials(item.name)}
+                style={[
+                  styles.avatar,
+                  { backgroundColor: getAvatarColor(item.role) },
+                ]}
+              />
+              <View style={styles.staffDetails}>
+                <Text style={styles.staffName}>{item.name}</Text>
+                <Text style={styles.staffUsername}>@{item.username}</Text>
+              </View>
+              <Chip
+                mode="flat"
+                style={[
+                  styles.roleChip,
+                  item.role === "admin"
+                    ? { backgroundColor: "rgba(244, 67, 54, 0.1)" }
+                    : { backgroundColor: "rgba(98, 0, 238, 0.1)" },
+                ]}
+                textStyle={[
+                  styles.roleChipText,
+                  item.role === "admin"
+                    ? { color: "#F44336" }
+                    : { color: "#6200ee" },
+                ]}
+              >
+                {item.role === "admin" ? "Quản trị viên" : "Nhân viên"}
+              </Chip>
+            </View>
+          </View>
+          <View style={styles.staffActions}>
+            <IconButton
+              icon="key"
+              size={20}
+              mode="contained"
+              onPress={() => openPasswordDialog(item)}
+              iconColor="#FFC107"
+              containerColor="rgba(255, 193, 7, 0.1)"
+              style={styles.actionButton}
+            />
+            <IconButton
+              icon="pencil"
+              size={20}
+              mode="contained"
+              onPress={() => openEditDialog(item)}
+              iconColor="#4CAF50"
+              containerColor="rgba(76, 175, 80, 0.1)"
+              style={styles.actionButton}
+            />
+            <IconButton
+              icon="delete"
+              size={20}
+              mode="contained"
+              onPress={() => handleDeleteStaff(item.id, item.name)}
+              iconColor="#F44336"
+              containerColor="rgba(244, 67, 54, 0.1)"
+              style={styles.actionButton}
+            />
+          </View>
+        </Surface>
+      </Animated.View>
+    );
+  };
+
+  // Render header with title and search
+  const renderHeader = () => (
+    <Animated.View
+      style={[
+        styles.headerContainer,
+        {
+          transform: [{ translateY: headerAnim }],
+          shadowOpacity: headerAnim.interpolate({
+            inputRange: [-50, 0],
+            outputRange: [0, 0.1],
+          }),
+        },
+      ]}
+    >
+      {/* <View style={styles.headerContent}></View> */}
+      <View style={styles.searchContainer}>
+        <Searchbar
+          placeholder="Tìm kiếm nhân viên..."
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={styles.searchbar}
+          iconColor="#6200ee"
+          clearButtonMode="while-editing"
+        />
       </View>
-      <View style={styles.staffActions}>
-        <IconButton
-          icon="key"
-          size={20}
-          onPress={() => openPasswordDialog(item)}
-          iconColor={theme.colors.primary}
-          style={styles.iconButton}
-        />
-        <IconButton
-          icon="pencil"
-          size={20}
-          onPress={() => openEditDialog(item)}
-          iconColor={theme.colors.primary}
-          style={styles.iconButton}
-        />
-        <IconButton
-          icon="delete"
-          size={20}
-          onPress={() => handleDeleteStaff(item.id, item.name)}
-          iconColor={theme.colors.error}
-          style={styles.iconButton}
-        />
-      </View>
-    </Surface>
+    </Animated.View>
   );
 
   if (loading && staff.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 16 }}>Loading staff...</Text>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text style={styles.loadingText}>Đang tải danh sách nhân viên...</Text>
       </View>
     );
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
+    <View style={[styles.container, { backgroundColor: "#f5f5f5" }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {renderHeader()}
+
       <FlatList
-        data={staff}
+        data={filteredStaff}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderStaffItem}
-        refreshing={loading}
+        refreshing={refreshing}
         onRefresh={loadStaff}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <Divider style={styles.divider} />}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
-          <Surface style={styles.emptyContainer} elevation={0}>
-            <Text
-              variant="bodyMedium"
-              style={{
-                textAlign: "center",
-                color: theme.colors.onSurfaceVariant,
-              }}
+          !loading ? (
+            <Animated.View
+              style={[
+                styles.emptyContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
             >
-              No staff members found. Add a staff member to get started!
-            </Text>
-          </Surface>
-        }
-        ListHeaderComponent={
-          <Text
-            variant="titleMedium"
-            style={[styles.sectionHeader, { color: theme.colors.onSurface }]}
-          >
-            Staff Members ({staff.length})
-          </Text>
+              <Avatar.Icon
+                size={80}
+                icon="account-group"
+                style={styles.emptyIcon}
+                color="#6200ee"
+              />
+              <Text style={styles.emptyTitle}>Không tìm thấy nhân viên</Text>
+              <Text style={styles.emptySubtitle}>
+                {searchQuery
+                  ? "Thử tìm kiếm với từ khóa khác"
+                  : "Thêm nhân viên để bắt đầu!"}
+              </Text>
+              {!searchQuery && (
+                <Button
+                  mode="contained"
+                  style={styles.emptyButton}
+                  onPress={openAddDialog}
+                  buttonColor="#6200ee"
+                >
+                  Thêm Nhân Viên Đầu Tiên
+                </Button>
+              )}
+            </Animated.View>
+          ) : (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6200ee" />
+              <Text style={styles.loadingText}>
+                Đang tải danh sách nhân viên...
+              </Text>
+            </View>
+          )
         }
       />
 
-      <FAB
-        icon="plus"
-        onPress={openAddDialog}
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        color="white"
-      />
+      <Animated.View
+        style={{
+          position: "absolute",
+          right: 16,
+          bottom: 16,
+          transform: [{ translateY: fabAnim }],
+        }}
+      >
+        <FAB
+          icon="plus"
+          onPress={openAddDialog}
+          style={[styles.fab, { backgroundColor: "#6200ee" }]}
+          color="white"
+        />
+      </Animated.View>
 
       {/* Add/Edit Staff Dialog */}
       <Portal>
@@ -302,82 +565,159 @@ export default function StaffScreen() {
           style={styles.dialog}
         >
           <Dialog.Title style={styles.dialogTitle}>
-            {editingStaff ? "Edit Staff Member" : "Add New Staff"}
+            {editingStaff ? "Chỉnh Sửa Nhân Viên" : "Thêm Nhân Viên Mới"}
           </Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="Full Name"
-              value={name}
-              onChangeText={setName}
-              mode="outlined"
-              style={styles.input}
-              left={<TextInput.Icon icon="account" />}
-            />
-            <TextInput
-              label="Username"
-              value={username}
-              onChangeText={setUsername}
-              mode="outlined"
-              style={styles.input}
-              autoCapitalize="none"
-              left={<TextInput.Icon icon="account-circle" />}
-            />
-            {!editingStaff && (
-              <>
-                <TextInput
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  mode="outlined"
-                  style={styles.input}
-                  left={<TextInput.Icon icon="lock" />}
-                />
-                <TextInput
-                  label="Confirm Password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  mode="outlined"
-                  style={styles.input}
-                  left={<TextInput.Icon icon="lock-check" />}
-                />
-              </>
-            )}
-            <Text
-              variant="labelLarge"
-              style={[styles.radioLabel, { color: theme.colors.onSurface }]}
-            >
-              Role
-            </Text>
-            <RadioButton.Group
-              onValueChange={(value) => setRole(value)}
-              value={role}
-            >
-              <View style={styles.radioContainer}>
-                <RadioButton.Item
-                  label="Staff"
-                  value="staff"
-                  position="leading"
-                  labelStyle={styles.radioLabelStyle}
-                />
-                <RadioButton.Item
-                  label="Administrator"
-                  value="admin"
-                  position="leading"
-                  labelStyle={styles.radioLabelStyle}
-                />
+          <Dialog.ScrollArea style={styles.dialogScrollArea}>
+            <View style={styles.dialogContent}>
+              <TextInput
+                label="Họ và tên"
+                value={name}
+                onChangeText={setName}
+                mode="outlined"
+                style={styles.input}
+                left={<TextInput.Icon icon="account" />}
+                theme={{ colors: { primary: "#6200ee" } }}
+              />
+              <TextInput
+                label="Tên đăng nhập"
+                value={username}
+                onChangeText={setUsername}
+                mode="outlined"
+                style={styles.input}
+                autoCapitalize="none"
+                left={<TextInput.Icon icon="account-circle" />}
+                theme={{ colors: { primary: "#6200ee" } }}
+              />
+              {!editingStaff && (
+                <>
+                  <TextInput
+                    label="Mật khẩu"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    mode="outlined"
+                    style={styles.input}
+                    left={<TextInput.Icon icon="lock" />}
+                    right={
+                      <TextInput.Icon
+                        icon={showPassword ? "eye-off" : "eye"}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setShowPassword(!showPassword);
+                        }}
+                      />
+                    }
+                    theme={{ colors: { primary: "#6200ee" } }}
+                  />
+                  <TextInput
+                    label="Xác nhận mật khẩu"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    mode="outlined"
+                    style={styles.input}
+                    left={<TextInput.Icon icon="lock-check" />}
+                    right={
+                      <TextInput.Icon
+                        icon={showConfirmPassword ? "eye-off" : "eye"}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setShowConfirmPassword(!showConfirmPassword);
+                        }}
+                      />
+                    }
+                    theme={{ colors: { primary: "#6200ee" } }}
+                  />
+                </>
+              )}
+
+              <Text style={styles.radioLabel}>Vai trò</Text>
+              <View style={styles.roleSelection}>
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setRole("staff");
+                  }}
+                  style={[
+                    styles.roleSelectButton,
+                    role === "staff" && {
+                      backgroundColor: "rgba(98, 0, 238, 0.1)",
+                      borderColor: "#6200ee",
+                    },
+                  ]}
+                >
+                  <IconButton
+                    icon="account"
+                    size={20}
+                    iconColor={role === "staff" ? "#6200ee" : "#666"}
+                    style={styles.roleIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.roleSelectText,
+                      role === "staff" && {
+                        color: "#6200ee",
+                        fontWeight: "600",
+                      },
+                    ]}
+                  >
+                    Nhân viên
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setRole("admin");
+                  }}
+                  style={[
+                    styles.roleSelectButton,
+                    role === "admin" && {
+                      backgroundColor: "rgba(244, 67, 54, 0.1)",
+                      borderColor: "#F44336",
+                    },
+                  ]}
+                >
+                  <IconButton
+                    icon="shield-account"
+                    size={20}
+                    iconColor={role === "admin" ? "#F44336" : "#666"}
+                    style={styles.roleIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.roleSelectText,
+                      role === "admin" && {
+                        color: "#F44336",
+                        fontWeight: "600",
+                      },
+                    ]}
+                  >
+                    Quản trị viên
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </RadioButton.Group>
-          </Dialog.Content>
+            </View>
+          </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+            <Button
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setDialogVisible(false);
+              }}
+              textColor="#F44336"
+            >
+              Hủy
+            </Button>
             <Button
               mode="contained"
-              onPress={editingStaff ? handleUpdateStaff : handleAddStaff}
-              style={styles.dialogButton}
+              buttonColor="#6200ee"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                editingStaff ? handleUpdateStaff() : handleAddStaff();
+              }}
             >
-              {editingStaff ? "Save Changes" : "Add Staff"}
+              {editingStaff ? "Lưu thay đổi" : "Thêm nhân viên"}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -391,38 +731,67 @@ export default function StaffScreen() {
           style={styles.dialog}
         >
           <Dialog.Title style={styles.dialogTitle}>
-            Change Password for {editingStaff?.name || ""}
+            Đổi mật khẩu cho {editingStaff?.name || ""}
           </Dialog.Title>
           <Dialog.Content>
             <TextInput
-              label="New Password"
+              label="Mật khẩu mới"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="lock" />}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? "eye-off" : "eye"}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShowPassword(!showPassword);
+                  }}
+                />
+              }
+              theme={{ colors: { primary: "#6200ee" } }}
             />
             <TextInput
-              label="Confirm New Password"
+              label="Xác nhận mật khẩu mới"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="lock-check" />}
+              right={
+                <TextInput.Icon
+                  icon={showConfirmPassword ? "eye-off" : "eye"}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShowConfirmPassword(!showConfirmPassword);
+                  }}
+                />
+              }
+              theme={{ colors: { primary: "#6200ee" } }}
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setPasswordDialogVisible(false)}>
-              Cancel
+            <Button
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setPasswordDialogVisible(false);
+              }}
+              textColor="#F44336"
+            >
+              Hủy
             </Button>
             <Button
               mode="contained"
-              onPress={handleUpdatePassword}
-              style={styles.dialogButton}
+              buttonColor="#6200ee"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                handleUpdatePassword();
+              }}
             >
-              Update Password
+              Cập nhật mật khẩu
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -431,101 +800,209 @@ export default function StaffScreen() {
   );
 }
 
+const { width, height } = Dimensions.get("window");
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  headerContainer: {
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 10,
+  },
+  headerContent: {
+    padding: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#212121",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    marginTop: 8,
+  },
+  statItem: {
+    marginRight: 24,
+    backgroundColor: "#f9f5ff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 80,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#6200ee",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#666",
+  },
+  searchContainer: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  searchbar: {
+    elevation: 0,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 12,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
   },
   listContent: {
     padding: 16,
-  },
-  sectionHeader: {
-    marginBottom: 16,
-    fontWeight: "bold",
+    paddingBottom: 80, // Extra padding for FAB
   },
   staffItem: {
     padding: 16,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    borderRadius: 16,
+    backgroundColor: "#fff",
   },
   staffHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+  },
+  avatar: {
+    marginRight: 12,
+  },
+  staffDetails: {
+    flex: 1,
   },
   staffInfo: {
-    flex: 1,
+    marginBottom: 8,
   },
   staffName: {
     fontSize: 16,
     fontWeight: "bold",
-    marginRight: 8,
+    color: "#212121",
+    marginBottom: 2,
   },
   staffUsername: {
     fontSize: 14,
+    color: "#666",
   },
   staffActions: {
     flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    backgroundColor: "#fafafa",
+    padding: 8,
+    borderRadius: 8,
   },
-  iconButton: {
-    margin: 0,
+  actionButton: {
+    margin: 4,
   },
   roleChip: {
-    height: 24,
-    minHeight: 24, // Thêm minHeight để đảm bảo chiều cao tối thiểu
-    borderRadius: 12,
-    justifyContent: "center", // Căn giữa nội dung theo chiều dọc
+    height: 30,
+    borderRadius: 14,
+    marginLeft: "auto",
   },
   roleChipText: {
     fontSize: 12,
-    lineHeight: 16,
-    paddingHorizontal: 6, // Thêm padding ngang để chữ không bị sát mép
-    includeFontPadding: false, // Loại bỏ padding mặc định của font
+    fontWeight: "600",
   },
   fab: {
-    position: "absolute",
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    borderRadius: 28,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  radioLabel: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  radioLabelStyle: {
-    fontSize: 14,
-  },
-  radioContainer: {
-    flexDirection: "column",
-  },
-  emptyContainer: {
-    padding: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  divider: {
-    marginVertical: 4,
+    elevation: 6,
+    shadowColor: "#6200ee",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   dialog: {
     borderRadius: 16,
+    backgroundColor: "#fff",
   },
   dialogTitle: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    textAlign: "center",
+    fontSize: 20,
+    color: "#212121",
   },
-  dialogButton: {
+  dialogScrollArea: {
+    paddingHorizontal: 0,
+  },
+  dialogContent: {
+    padding: 16,
+  },
+  input: {
+    marginBottom: 16,
+    backgroundColor: "#fff",
+  },
+  radioLabel: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  roleSelection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  roleSelectButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    margin: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderRadius: 8,
-    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: "#eee",
+    backgroundColor: "#fafafa",
+  },
+  roleIcon: {
+    margin: 0,
+    padding: 0,
+    width: 24,
+    height: 24,
+  },
+  roleSelectText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 4,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  emptyIcon: {
+    backgroundColor: "rgba(98, 0, 238, 0.1)",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: "#212121",
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  emptyButton: {
+    paddingHorizontal: 24,
   },
 });

@@ -2,37 +2,35 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, StyleSheet } from "react-native";
-import { Text } from "react-native-paper";
+import { Text, useTheme } from "react-native-paper";
+import { Colors } from "../../constants/Colors";
 
 export default function StaffLayout() {
+  const theme = useTheme();
+  const isDark = theme.dark;
+
   return (
     <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: "#FFFFFF",
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: isDark ? Colors.dark.surface : Colors.light.surface,
+          borderTopColor: isDark ? Colors.dark.border : Colors.light.border,
           elevation: 0,
           shadowOpacity: 0,
-        },
-        headerTintColor: "#000000",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          textTransform: "uppercase",
-        },
-        tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopWidth: 1,
-          borderTopColor: "#E0E0E0",
-          elevation: 0,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: "#000000",
-        tabBarInactiveTintColor: "rgba(0, 0, 0, 0.6)",
+        tabBarActiveTintColor: isDark
+          ? Colors.dark.primary
+          : Colors.light.primary,
+        tabBarInactiveTintColor: isDark
+          ? Colors.dark.textSecondary
+          : Colors.light.textSecondary,
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: "bold",
-          textTransform: "uppercase",
+          fontWeight: "500",
         },
       }}
     >
@@ -40,7 +38,7 @@ export default function StaffLayout() {
         name="tables"
         options={{
           title: "QUẢN LÝ BÀN",
-          tabBarLabel: "BÀN",
+          tabBarLabel: "Bàn",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="table" size={size} color={color} />
           ),
@@ -50,7 +48,7 @@ export default function StaffLayout() {
         name="active-orders"
         options={{
           title: "ĐƠN HÀNG ĐANG XỬ LÝ",
-          tabBarLabel: "ĐANG XỬ LÝ",
+          tabBarLabel: "Đang xử lý",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="clock-outline"
@@ -64,7 +62,7 @@ export default function StaffLayout() {
         name="completed-orders"
         options={{
           title: "ĐƠN HÀNG HOÀN THÀNH",
-          tabBarLabel: "HOÀN THÀNH",
+          tabBarLabel: "Hoàn thành",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="check-circle-outline"
@@ -77,8 +75,8 @@ export default function StaffLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "HỒ SƠ",
-          tabBarLabel: "HỒ SƠ",
+          title: "Hồ sơ",
+          tabBarLabel: "Hồ sơ",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" size={size} color={color} />
           ),
@@ -87,52 +85,49 @@ export default function StaffLayout() {
       <Tabs.Screen
         name="create-order"
         options={{
-          title: "TẠO ĐƠN HÀNG",
+          title: "Tạo đơn hàng",
           href: null,
           headerStyle: {
-            backgroundColor: "#FFFFFF",
+            backgroundColor: isDark
+              ? Colors.dark.surface
+              : Colors.light.surface,
             elevation: 0,
             shadowOpacity: 0,
           },
-          headerTintColor: "#000000",
-          headerTitleStyle: {
-            fontWeight: "bold",
-            textTransform: "uppercase",
-          },
+          headerTintColor: isDark ? Colors.dark.text : Colors.light.text,
+          headerTitleStyle: {},
         }}
       />
       <Tabs.Screen
         name="order-details"
         options={{
-          title: "CHI TIẾT ĐƠN HÀNG",
+          title: "Chi tiết đơn hàng",
           href: null,
           headerStyle: {
-            backgroundColor: "#FFFFFF",
+            backgroundColor: isDark
+              ? Colors.dark.surface
+              : Colors.light.surface,
             elevation: 0,
             shadowOpacity: 0,
           },
-          headerTintColor: "#000000",
-          headerTitleStyle: {
-            fontWeight: "bold",
-            textTransform: "uppercase",
-          },
+          headerTintColor: isDark ? Colors.dark.text : Colors.light.text,
+          headerTitleStyle: {},
         }}
       />
       <Tabs.Screen
         name="add-items"
         options={{
-          title: "THÊM MÓN",
+          title: "Thêm món",
           href: null,
           headerStyle: {
-            backgroundColor: "#FFFFFF",
+            backgroundColor: isDark
+              ? Colors.dark.surface
+              : Colors.light.surface,
             elevation: 0,
             shadowOpacity: 0,
           },
-          headerTintColor: "#000000",
-          headerTitleStyle: {
-            fontWeight: "bold",
-            textTransform: "uppercase",
-          },
+          headerTintColor: isDark ? Colors.dark.text : Colors.light.text,
+          headerTitleStyle: {},
         }}
       />
     </Tabs>
@@ -141,13 +136,7 @@ export default function StaffLayout() {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: "#FFFFFF",
     elevation: 0,
     shadowOpacity: 0,
-  },
-  headerTitle: {
-    color: "#000000",
-    fontWeight: "bold",
-    textTransform: "uppercase",
   },
 });

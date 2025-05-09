@@ -9,7 +9,7 @@ export default function AdminLayout() {
   const { userInfo, logout } = useContext(AuthContext);
   const router = useRouter();
 
-  // Redirect to login if not authenticated or not admin
+  // Chuyển hướng đến trang đăng nhập nếu chưa xác thực hoặc không phải admin
   if (!userInfo || userInfo.role !== "admin") {
     router.replace("/login");
     return null;
@@ -27,7 +27,7 @@ export default function AdminLayout() {
             }}
             style={{ marginRight: 10 }}
           >
-            Logout
+            Đăng Xuất
           </Button>
         ),
       }}
@@ -35,7 +35,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: "Bảng Điều Khiển",
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="dashboard" size={size} color={color} />
           ),
@@ -44,7 +44,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="tables"
         options={{
-          title: "Tables",
+          title: "Bàn",
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="table-restaurant" size={size} color={color} />
           ),
@@ -53,7 +53,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="menu"
         options={{
-          title: "Menu",
+          title: "Thực Đơn",
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="restaurant-menu" size={size} color={color} />
           ),
@@ -62,7 +62,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="staff"
         options={{
-          title: "Staff",
+          title: "Nhân Viên",
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="people" size={size} color={color} />
           ),
@@ -71,7 +71,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="reports"
         options={{
-          title: "Reports",
+          title: "Báo Cáo",
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="insert-chart" size={size} color={color} />
           ),

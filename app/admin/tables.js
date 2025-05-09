@@ -51,7 +51,7 @@ export default function TablesScreen() {
   const [selectedTable, setSelectedTable] = useState(null);
 
   // Predefined sections for demo
-  const sections = ["Main", "Patio", "Bar", "Private"];
+  const sections = ["Chính", "Sân Thượng", "Quầy Bar", "Phòng Riêng"];
 
   // Load tables on component mount
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function TablesScreen() {
       setTables(tableData);
     } catch (error) {
       console.error("Failed to load tables:", error);
-      Alert.alert("Error", "Failed to load tables");
+      Alert.alert("Lỗi", "Không thể tải danh sách bàn");
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export default function TablesScreen() {
   // Handle adding a new table
   const handleAddTable = async () => {
     if (!tableName.trim()) {
-      Alert.alert("Error", "Please enter a table name");
+      Alert.alert("Lỗi", "Vui lòng nhập tên bàn");
       return;
     }
 
@@ -88,20 +88,20 @@ export default function TablesScreen() {
       };
 
       await addTable(tableData);
-      Alert.alert("Success", "Table added successfully");
+      Alert.alert("Thành công", "Đã thêm bàn thành công");
       setDialogVisible(false);
       resetForm();
       loadTables();
     } catch (error) {
       console.error("Failed to add table:", error);
-      Alert.alert("Error", error.message || "Failed to add table");
+      Alert.alert("Lỗi", error.message || "Không thể thêm bàn");
     }
   };
 
   // Handle updating a table
   const handleUpdateTable = async () => {
     if (!tableName.trim() || !editingTable) {
-      Alert.alert("Error", "Please enter a table name");
+      Alert.alert("Lỗi", "Vui lòng nhập tên bàn");
       return;
     }
 
@@ -114,39 +114,35 @@ export default function TablesScreen() {
       };
 
       await updateTable(editingTable.id, tableData);
-      Alert.alert("Success", "Table updated successfully");
+      Alert.alert("Thành công", "Đã cập nhật bàn thành công");
       setDialogVisible(false);
       resetForm();
       loadTables();
     } catch (error) {
       console.error("Failed to update table:", error);
-      Alert.alert("Error", error.message || "Failed to update table");
+      Alert.alert("Lỗi", error.message || "Không thể cập nhật bàn");
     }
   };
 
   // Handle deleting a table
   const handleDeleteTable = (tableId, tableName) => {
-    Alert.alert(
-      "Delete Table",
-      `Are you sure you want to delete ${tableName}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteTable(tableId);
-              Alert.alert("Success", "Table deleted successfully");
-              loadTables();
-            } catch (error) {
-              console.error("Failed to delete table:", error);
-              Alert.alert("Error", error.message || "Failed to delete table");
-            }
-          },
+    Alert.alert("Xóa Bàn", `Bạn có chắc chắn muốn xóa ${tableName}?`, [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteTable(tableId);
+            Alert.alert("Thành công", "Đã xóa bàn thành công");
+            loadTables();
+          } catch (error) {
+            console.error("Failed to delete table:", error);
+            Alert.alert("Lỗi", error.message || "Không thể xóa bàn");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   // Reset form fields
@@ -185,7 +181,7 @@ export default function TablesScreen() {
       loadTables();
     } catch (error) {
       console.error("Failed to update table status:", error);
-      Alert.alert("Error", "Failed to update table status");
+      Alert.alert("Lỗi", "Không thể cập nhật trạng thái bàn");
     }
   };
 
@@ -229,13 +225,13 @@ export default function TablesScreen() {
   const getStatusText = (status) => {
     switch (status) {
       case "empty":
-        return "Available";
+        return "Còn trống";
       case "occupied":
-        return "Occupied";
+        return "Đang sử dụng";
       case "maintenance":
-        return "Maintenance";
+        return "Bảo trì";
       default:
-        return "Unknown";
+        return "Không xác định";
     }
   };
 
@@ -345,7 +341,7 @@ export default function TablesScreen() {
   // Render section filter chips
   const renderSectionFilter = () => (
     <View style={styles.filterSection}>
-      <Text style={styles.filterTitle}>Section</Text>
+      <Text style={styles.filterTitle}>Khu vực</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <Chip
           selected={filterSection === "All"}
@@ -374,15 +370,15 @@ export default function TablesScreen() {
   // Render status filter
   const renderStatusFilter = () => (
     <View style={styles.filterSection}>
-      <Text style={styles.filterTitle}>Status</Text>
+      <Text style={styles.filterTitle}>Trạng thái</Text>
       <SegmentedButtons
         value={filterStatus}
         onValueChange={setFilterStatus}
         buttons={[
-          { value: "All", label: "All" },
+          { value: "All", label: "Tất cả" },
           {
             value: "Available",
-            label: "Available",
+            label: "Còn trống",
             icon: "check-circle",
             style:
               filterStatus === "Available"
@@ -391,7 +387,7 @@ export default function TablesScreen() {
           },
           {
             value: "Occupied",
-            label: "Occupied",
+            label: "Đang sử dụng",
             icon: "account-group",
             style:
               filterStatus === "Occupied"
@@ -400,7 +396,7 @@ export default function TablesScreen() {
           },
           {
             value: "Maintenance",
-            label: "Maintenance",
+            label: "Bảo trì",
             icon: "tools",
             style:
               filterStatus === "Maintenance"
@@ -417,23 +413,23 @@ export default function TablesScreen() {
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.headerTop}>
-        <Text style={styles.headerTitle}>Tables</Text>
+        <Text style={styles.headerTitle}>Bàn</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{tables.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statLabel}>Tổng số</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>
               {tables.filter((table) => table.status === "empty").length}
             </Text>
-            <Text style={styles.statLabel}>Available</Text>
+            <Text style={styles.statLabel}>Còn trống</Text>
           </View>
         </View>
       </View>
 
       <Searchbar
-        placeholder="Search tables..."
+        placeholder="Tìm kiếm bàn..."
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchBar}
@@ -466,13 +462,13 @@ export default function TablesScreen() {
                 size={80}
                 iconColor={theme.colors.outlineVariant}
               />
-              <Text style={styles.emptyTitle}>No tables found</Text>
+              <Text style={styles.emptyTitle}>Không tìm thấy bàn nào</Text>
               <Text style={styles.emptySubtitle}>
                 {searchQuery ||
                 filterSection !== "All" ||
                 filterStatus !== "All"
-                  ? "Try adjusting your filters"
-                  : "Add a table to get started!"}
+                  ? "Hãy thử điều chỉnh bộ lọc"
+                  : "Thêm bàn để bắt đầu!"}
               </Text>
               {!searchQuery &&
                 filterSection === "All" &&
@@ -482,7 +478,7 @@ export default function TablesScreen() {
                     style={styles.emptyButton}
                     onPress={openAddDialog}
                   >
-                    Add First Table
+                    Thêm Bàn Đầu Tiên
                   </Button>
                 )}
             </View>
