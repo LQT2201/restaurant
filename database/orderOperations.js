@@ -141,9 +141,15 @@ export const createOrder = async (orderData) => {
     const menuItems = new Map();
 
     // Get all menu items in one query
+    // Xây dựng query trực tiếp với multiple ? để tránh lỗi với IN clause
+    const placeholders = items.map(() => "?").join(",");
+    const menuItemIds = items.map((item) => item.menu_item_id);
+
+    console.log("Menu item IDs:", JSON.stringify(menuItemIds));
+
     const menuItemsResult = await db.getAllAsync(
-      "SELECT * FROM menu_items WHERE id IN (?)",
-      [items.map((item) => item.menu_item_id).join(",")]
+      `SELECT * FROM menu_items WHERE id IN (${placeholders})`,
+      menuItemIds
     );
 
     if (!menuItemsResult || menuItemsResult.length === 0) {

@@ -1,10 +1,11 @@
 import { useContext, useEffect } from "react";
-import { Redirect } from "expo-router";
+import { Redirect, usePathname } from "expo-router";
 import { ActivityIndicator, View, StyleSheet, Text } from "react-native";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Index() {
   const { isLoading, userToken, userInfo } = useContext(AuthContext);
+  const pathname = usePathname();
 
   // Show loading indicator while checking authentication state
   if (isLoading) {
@@ -18,6 +19,10 @@ export default function Index() {
 
   // Redirect based on authentication status
   if (!userToken) {
+    // Check if we're on the register page
+    if (pathname === "/register") {
+      return <Redirect href="/register" />;
+    }
     return <Redirect href="/login" />;
   }
 

@@ -90,7 +90,10 @@ export default function CreateOrderScreen() {
     setSelectedItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === itemId);
       if (existingItem) {
-        const newQuantity = existingItem.quantity + change;
+        // Đảm bảo quantity luôn là số
+        const currentQuantity = Number(existingItem.quantity) || 0;
+        const newQuantity = currentQuantity + change;
+
         if (newQuantity <= 0) {
           Alert.alert("Xác nhận", "Bạn có muốn xóa món này khỏi đơn hàng?", [
             {
@@ -123,7 +126,7 @@ export default function CreateOrderScreen() {
           {
             ...menuItem,
             quantity: 1,
-            price: Number.parseFloat(menuItem.price),
+            price: Number(menuItem.price),
           },
         ];
       }
@@ -163,33 +166,65 @@ export default function CreateOrderScreen() {
     try {
       setLoading(true);
 
-      // Validate selected items
-      const validItems = selectedItems.filter((item) => {
-        return item.id && item.quantity > 0 && item.price > 0;
+      // Kiểm tra và log chi tiết từng item
+      console.log("Selected items:", JSON.stringify(selectedItems));
+      selectedItems.forEach((item, index) => {
+        console.log(`Item ${index + 1}:`, {
+          id: item.id,
+          type: typeof item.id,
+          name: item.name,
+          quantity: item.quantity,
+          quantityType: typeof item.quantity,
+          price: item.price,
+          priceType: typeof item.price,
+        });
       });
 
-      if (validItems.length === 0) {
-        throw new Error("Không tìm thấy món hợp lệ");
-      }
+      // Tạo danh sách items với dữ liệu đúng định dạng và đảm bảo menu_item_id đúng
+      const orderItems = selectedItems.map((item) => {
+        // Đảm bảo tất cả item.id là số nguyên (không phải chuỗi)
+        const id =
+          typeof item.id === "string" ? parseInt(item.id, 10) : item.id;
 
-      // Kiểm tra và log các items để debug
-      console.log(
-        "Selected items before creating order:",
-        JSON.stringify(validItems)
-      );
+        // Đảm bảo các giá trị khác cũng là số
+        const quantity =
+          typeof item.quantity === "string"
+            ? parseInt(item.quantity, 10)
+            : item.quantity || 1;
 
-      // Create the order
+        const price =
+          typeof item.price === "string"
+            ? parseFloat(item.price)
+            : item.price || 0;
+
+        console.log(
+          `Item "${
+            item.name
+          }" - ID: ${id} (${typeof id}), Quantity: ${quantity}, Price: ${price}`
+        );
+
+        return {
+          menu_item_id: id,
+          quantity: quantity,
+          price: price,
+          notes: "",
+        };
+      });
+
+      console.log("Processed order items:", JSON.stringify(orderItems));
+
+      // Create the order with exact data expected by the API
+      const tableIdNum = parseInt(tableId, 10);
+      console.log(`Creating order for table ID: ${tableIdNum}`);
+
       const orderData = {
-        table_id: Number.parseInt(tableId),
+        table_id: tableIdNum,
         notes: notes.trim(),
         status: "pending",
-        items: validItems.map((item) => ({
-          menu_item_id: item.id,
-          quantity: parseInt(item.quantity, 10), // Đảm bảo số lượng là số nguyên
-          notes: "",
-          price: Number.parseFloat(item.price),
-        })),
+        items: orderItems,
       };
+
+      console.log("Final order data:", JSON.stringify(orderData));
 
       const order = await createOrder(orderData);
 
@@ -198,6 +233,13 @@ export default function CreateOrderScreen() {
           "Tạo đơn hàng thất bại - không có ID đơn hàng được trả về"
         );
       }
+
+      // Đóng modal hiển thị chi tiết đơn hàng
+      setShowOrderSummary(false);
+
+      // Reset selectedItems và notes
+      setSelectedItems([]);
+      setNotes("");
 
       Alert.alert("Thành công", `Đơn hàng #${order.id} đã được tạo`, [
         {

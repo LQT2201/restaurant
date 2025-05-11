@@ -16,15 +16,16 @@ import { TextInput, Button, Text, Surface, Title } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { AuthContext } from "../context/AuthContext";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
+import { addStaff } from "../database/staffOperations";
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [secureTextEntry, setSecureTextEntry] = useState(true);
-  const { login } = useContext(AuthContext);
   const router = useRouter();
 
   // Animation values
@@ -34,16 +35,15 @@ export default function LoginScreen() {
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   // Input animation values
+  const [nameFocused, setNameFocused] = useState(false);
   const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const nameAnim = useRef(new Animated.Value(0)).current;
   const usernameAnim = useRef(new Animated.Value(0)).current;
   const passwordAnim = useRef(new Animated.Value(0)).current;
 
-  // Background animation
-  const backgroundAnim = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    // Start entrance animations when component mounts
+    // Start entrance animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -61,25 +61,17 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-
-    // Start background animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(backgroundAnim, {
-          toValue: 1,
-          duration: 15000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(backgroundAnim, {
-          toValue: 0,
-          duration: 15000,
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
   }, []);
 
   // Handle input focus animations
+  useEffect(() => {
+    Animated.timing(nameAnim, {
+      toValue: nameFocused || name.length > 0 ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [nameFocused, name]);
+
   useEffect(() => {
     Animated.timing(usernameAnim, {
       toValue: usernameFocused || username.length > 0 ? 1 : 0,
@@ -97,10 +89,7 @@ export default function LoginScreen() {
   }, [passwordFocused, password]);
 
   const shakeAnimation = () => {
-    // Vibrate device for error feedback
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-    // Create a sequence of movements for shake effect
     Animated.sequence([
       Animated.timing(shakeAnim, {
         toValue: 10,
@@ -130,10 +119,18 @@ export default function LoginScreen() {
     ]).start();
   };
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     setError("");
-    if (!username || !password) {
-      setError("Vui lòng nhập tên đăng nhập và mật khẩu");
+
+    // Validate inputs
+    if (!name || !username || !password || !confirmPassword) {
+      setError("Vui lòng điền đầy đủ thông tin");
+      shakeAnimation();
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
       shakeAnimation();
       return;
     }
@@ -141,7 +138,7 @@ export default function LoginScreen() {
     // Button press feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Login animation
+    // Register animation
     Animated.timing(scaleAnim, {
       toValue: 0.95,
       duration: 100,
@@ -156,52 +153,38 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const user = await login(username, password);
-      if (user) {
-        // Success animation before navigation
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
-            toValue: -50,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          if (user.role === "admin") {
-            router.replace("/admin/dashboard");
-          } else {
-            router.replace("/staff/tables");
-          }
-        });
-      } else {
-        setError("Tên đăng nhập hoặc mật khẩu không đúng");
-        shakeAnimation();
-      }
+      const staffData = {
+        name,
+        username,
+        password,
+        role: "staff", // Default role for new registrations
+      };
+
+      await addStaff(staffData);
+
+      // Success animation before navigation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -50,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        router.replace("/login");
+      });
     } catch (error) {
-      console.error("Login error:", error);
-      setError(
-        error.message || "Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại."
-      );
+      console.error("Registration error:", error);
+      setError(error.message || "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại.");
       shakeAnimation();
     } finally {
       setLoading(false);
     }
   };
-
-  // Interpolate background colors for animation
-  const backgroundColorTop = backgroundAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#4a00e0", "#8e2de2"],
-  });
-
-  const backgroundColorBottom = backgroundAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#8e2de2", "#4a00e0"],
-  });
 
   if (loading) {
     return (
@@ -214,7 +197,7 @@ export default function LoginScreen() {
         >
           <ActivityIndicator size="large" color="#ffffff" />
           <Text style={[styles.loadingText, { color: "#ffffff" }]}>
-            Đang đăng nhập...
+            Đang đăng ký...
           </Text>
         </Animated.View>
       </View>
@@ -227,27 +210,6 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        {/* Animated Background */}
-        <Animated.View style={[StyleSheet.absoluteFill]}>
-          <Animated.View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: backgroundColorTop,
-              },
-            ]}
-          />
-          <Animated.View
-            style={[StyleSheet.absoluteFill, styles.backgroundPattern]}
-          >
-            <ImageBackground
-              source={require("../assets/res.jpg")}
-              style={styles.backgroundImage}
-              resizeMode="cover"
-            />
-          </Animated.View>
-        </Animated.View>
-
         <View style={styles.background}>
           <Animated.View
             style={[
@@ -274,11 +236,48 @@ export default function LoginScreen() {
                 />
               </Animated.View>
 
-              <Title style={styles.title}>Chào Mừng Trở Lại</Title>
-              <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
+              <Title style={styles.title}>Đăng Ký Tài Khoản</Title>
+              <Text style={styles.subtitle}>Tạo tài khoản nhân viên mới</Text>
 
               <View style={styles.formContainer}>
-                {/* Enhanced Username Input */}
+                {/* Name Input */}
+                <View style={styles.inputContainer}>
+                  <Animated.View
+                    style={[
+                      styles.inputIconContainer,
+                      {
+                        backgroundColor: nameAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["#f0f0f0", "#ede7f6"],
+                        }),
+                      },
+                    ]}
+                  >
+                    <TextInput.Icon icon="account" color="#6200ee" />
+                  </Animated.View>
+                  <View style={styles.textInputWrapper}>
+                    <TextInput
+                      label="Họ và tên"
+                      value={name}
+                      onChangeText={setName}
+                      mode="flat"
+                      style={[styles.input, nameFocused && styles.inputFocused]}
+                      disabled={loading}
+                      onFocus={() => setNameFocused(true)}
+                      onBlur={() => setNameFocused(false)}
+                      theme={{
+                        colors: {
+                          primary: "#6200ee",
+                          background: "transparent",
+                        },
+                      }}
+                      underlineColor="transparent"
+                      activeUnderlineColor="#6200ee"
+                    />
+                  </View>
+                </View>
+
+                {/* Username Input */}
                 <View style={styles.inputContainer}>
                   <Animated.View
                     style={[
@@ -291,7 +290,7 @@ export default function LoginScreen() {
                       },
                     ]}
                   >
-                    <TextInput.Icon icon="account" color="#6200ee" />
+                    <TextInput.Icon icon="account-circle" color="#6200ee" />
                   </Animated.View>
                   <View style={styles.textInputWrapper}>
                     <TextInput
@@ -319,7 +318,7 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
-                {/* Enhanced Password Input */}
+                {/* Password Input */}
                 <View style={styles.inputContainer}>
                   <Animated.View
                     style={[
@@ -370,6 +369,45 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
+                {/* Confirm Password Input */}
+                <View style={styles.inputContainer}>
+                  <Animated.View
+                    style={[
+                      styles.inputIconContainer,
+                      {
+                        backgroundColor: passwordAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["#f0f0f0", "#ede7f6"],
+                        }),
+                      },
+                    ]}
+                  >
+                    <TextInput.Icon icon="lock-check" color="#6200ee" />
+                  </Animated.View>
+                  <View style={styles.textInputWrapper}>
+                    <TextInput
+                      label="Xác nhận mật khẩu"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={secureTextEntry}
+                      mode="flat"
+                      style={[
+                        styles.input,
+                        passwordFocused && styles.inputFocused,
+                      ]}
+                      disabled={loading}
+                      theme={{
+                        colors: {
+                          primary: "#6200ee",
+                          background: "transparent",
+                        },
+                      }}
+                      underlineColor="transparent"
+                      activeUnderlineColor="#6200ee"
+                    />
+                  </View>
+                </View>
+
                 {error ? (
                   <Animated.View
                     style={{
@@ -388,34 +426,26 @@ export default function LoginScreen() {
                 >
                   <Button
                     mode="contained"
-                    onPress={handleLogin}
+                    onPress={handleRegister}
                     style={styles.button}
                     loading={loading}
                     disabled={loading}
                     labelStyle={styles.buttonLabel}
                     contentStyle={styles.buttonContent}
                   >
-                    Đăng Nhập
+                    Đăng Ký
                   </Button>
                 </Animated.View>
 
                 <View style={styles.footer}>
                   <Text
-                    style={styles.footerText}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                    }}
-                  >
-                    Quên mật khẩu?
-                  </Text>
-                  <Text
                     style={[styles.footerText, styles.footerLink]}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      router.push("/register");
+                      router.push("/login");
                     }}
                   >
-                    Tạo tài khoản
+                    Đã có tài khoản? Đăng nhập
                   </Text>
                 </View>
               </View>
@@ -437,19 +467,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
-  },
-  backgroundPattern: {
-    opacity: 0.8,
-  },
-  backgroundImage: {
-    flex: 1,
+    backgroundColor: "#6200ee",
   },
   surface: {
     padding: 30,
-    borderRadius: 24, // More rounded corners
-    elevation: 12, // Increased elevation
+    borderRadius: 24,
+    elevation: 12,
     backgroundColor: "white",
-    shadowColor: "#6200ee", // Purple shadow
+    shadowColor: "#6200ee",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
@@ -459,7 +484,7 @@ const styles = StyleSheet.create({
     height: 100,
     alignSelf: "center",
     marginBottom: 20,
-    borderRadius: 50, // Make logo circular
+    borderRadius: 50,
     borderWidth: 3,
     borderColor: "#ede7f6",
   },
@@ -511,7 +536,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 10,
     paddingVertical: 10,
-    borderRadius: 12, // More rounded button
+    borderRadius: 12,
     backgroundColor: "#6200ee",
     elevation: 4,
     shadowColor: "#6200ee",
@@ -523,7 +548,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
-    letterSpacing: 0.5, // Slight letter spacing for better readability
+    letterSpacing: 0.5,
   },
   buttonContent: {
     height: 48,
@@ -552,7 +577,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginTop: 20,
   },
   footerText: {
